@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEONBEAT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══ RESET & BASE ═══ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --c0:#00f5ff; --c1:#ff2d78; --c2:#ffe600; --c3:#7b2fff; --c4:#00ff9d;
+  --bg:#05080f; --bg2:#08101e; --txt:#e8f4ff;
+  --easy:#00ff9d; --med:#00f5ff; --hard:#ffe600; --insane:#ff2d78;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;user-select:none}
+/* Scanlines */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:9999}
+
+/* ═══ SCREENS ═══ */
+.screen{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column}
+.screen.hidden{display:none!important}
+
+/* ═══════════════════════════════════════
+   TITLE SCREEN
+═══════════════════════════════════════ */
+#screen-title{background:var(--bg);align-items:center;justify-content:center;gap:0}
+.title-bg{position:absolute;inset:0;overflow:hidden}
+.title-bg canvas{position:absolute;inset:0;width:100%;height:100%}
+.title-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:32px}
+.title-logo{font-family:'Orbitron',monospace;font-size:clamp(40px,8vw,90px);font-weight:900;letter-spacing:12px;
+  background:linear-gradient(135deg,#00f5ff 0%,#7b2fff 40%,#ff2d78 70%,#ffe600 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 40px rgba(0,245,255,0.5));
+  animation:logo-pulse 3s ease-in-out infinite}
+@keyframes logo-pulse{0%,100%{filter:drop-shadow(0 0 40px rgba(0,245,255,0.5))} 50%{filter:drop-shadow(0 0 70px rgba(0,245,255,0.9)) drop-shadow(0 0 120px rgba(123,47,255,0.5))}}
+.title-sub{font-family:'Rajdhani';font-size:16px;letter-spacing:8px;color:rgba(232,244,255,0.4);text-transform:uppercase}
+.title-press{font-family:'Orbitron';font-size:13px;letter-spacing:5px;color:var(--c0);animation:blink2 1.2s steps(1) infinite;margin-top:16px}
+@keyframes blink2{0%,100%{opacity:1}50%{opacity:0}}
+.title-version{position:absolute;bottom:20px;right:24px;font-size:10px;letter-spacing:2px;color:rgba(232,244,255,0.2)}
+
+/* ═══════════════════════════════════════
+   SONG SELECT
+═══════════════════════════════════════ */
+#screen-select{background:var(--bg)}
+.sel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid rgba(0,245,255,0.12);flex-shrink:0;background:rgba(5,8,15,0.98);position:relative;z-index:5}
+.logo{font-family:'Orbitron';font-size:20px;font-weight:900;letter-spacing:6px;background:linear-gradient(90deg,var(--c0),var(--c3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr-btns{display:flex;gap:8px}
+.hdr-btn{padding:7px 16px;border:1px solid rgba(0,245,255,0.25);background:transparent;color:var(--txt);font-family:'Rajdhani';font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.15s}
+.hdr-btn:hover{border-color:var(--c0);color:var(--c0);background:rgba(0,245,255,0.07)}
+
+.sel-body{flex:1;display:flex;overflow:hidden;min-height:0}
+
+/* Song list panel */
+.song-panel{width:300px;flex-shrink:0;border-right:1px solid rgba(0,245,255,0.1);display:flex;flex-direction:column;background:rgba(5,8,15,0.6)}
+.panel-hdr{padding:10px 14px 7px;font-family:'Orbitron';font-size:9px;letter-spacing:3px;color:rgba(232,244,255,0.3);border-bottom:1px solid rgba(255,255,255,0.04);flex-shrink:0}
+.song-search{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,0.04);flex-shrink:0}
+.song-search input{width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(0,245,255,0.12);color:var(--txt);font-family:'Rajdhani';font-size:13px;letter-spacing:1px;padding:5px 10px;outline:none;transition:border-color 0.15s}
+.song-search input:focus{border-color:rgba(0,245,255,0.35)}
+.song-search input::placeholder{color:rgba(232,244,255,0.2)}
+.song-list{flex:1;overflow-y:auto;padding:4px}
+.song-list::-webkit-scrollbar{width:3px}
+.song-list::-webkit-scrollbar-thumb{background:rgba(0,245,255,0.25)}
+.song-item{padding:10px 12px;margin-bottom:2px;cursor:pointer;border:1px solid transparent;border-left:3px solid transparent;transition:all 0.1s;position:relative}
+.song-item:hover{background:rgba(255,255,255,0.03);border-color:rgba(0,245,255,0.1)}
+.song-item.active{background:rgba(0,245,255,0.06);border-color:rgba(0,245,255,0.2);border-left-color:var(--c0)}
+.song-title{font-weight:700;font-size:13px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:36px}
+.song-meta{font-size:11px;color:rgba(232,244,255,0.35);letter-spacing:1px}
+.song-bpm{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:'Orbitron';font-size:9px;color:var(--c0);opacity:0.5}
+.song-item-custom{border-left-color:#ffe600!important}
+.song-item-del{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:13px;color:rgba(255,45,120,0.4);cursor:pointer;padding:4px;display:none;line-height:1}
+.song-item:hover .song-item-del{display:block}
+.song-item-del:hover{color:var(--c1)}
+.panel-section{padding:7px 14px 4px;font-family:'Orbitron';font-size:8px;letter-spacing:3px;color:rgba(232,244,255,0.2);border-bottom:1px solid rgba(255,255,255,0.03)}
+
+/* Detail panel */
+.detail-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.detail-bg{position:absolute;inset:0;transition:background 0.5s;z-index:0}
+.detail-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;height:100%;padding:28px}
+
+.cover-art{
+  width:140px;height:140px;border:1px solid rgba(0,245,255,0.2);
+  display:flex;align-items:center;justify-content:center;font-size:50px;
+  position:relative;flex-shrink:0;
+  box-shadow:0 0 40px rgba(0,245,255,0.08);
+  transition:all 0.3s;
+}
+.cover-art::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.07),transparent);pointer-events:none}
+.cover-art:hover{transform:scale(1.04)}
+
+.detail-info{text-align:center}
+.detail-info h2{font-family:'Orbitron';font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:4px}
+.detail-artist{color:var(--c0);font-size:13px;letter-spacing:2px;margin-bottom:4px}
+.detail-bpm{color:rgba(232,244,255,0.35);font-size:11px;letter-spacing:1px}
+
+/* Waveform preview */
+.waveform-bar{display:flex;align-items:flex-end;gap:1px;height:36px;overflow:hidden;width:200px;opacity:0.6}
+.wf-col{flex:1;border-radius:1px 1px 0 0;min-width:2px;transition:height 0.1s}
+
+/* Diff buttons */
+.diff-row{display:flex;gap:6px}
+.diff-btn{padding:8px 14px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(232,244,255,0.4);font-family:'Rajdhani';font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.1s}
+.diff-btn:hover{border-color:rgba(0,245,255,0.4);color:var(--txt)}
+.diff-btn.sel-easy{border-color:var(--easy);color:var(--easy);background:rgba(0,255,157,0.09)}
+.diff-btn.sel-medium{border-color:var(--med);color:var(--med);background:rgba(0,245,255,0.09)}
+.diff-btn.sel-hard{border-color:var(--hard);color:var(--hard);background:rgba(255,230,0,0.09)}
+.diff-btn.sel-insane{border-color:var(--insane);color:var(--insane);background:rgba(255,45,120,0.09)}
+
+/* Detail controls row */
+.detail-controls{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center}
+.keys-hint{font-size:12px;letter-spacing:2px;color:rgba(232,244,255,0.35);text-align:center}
+.ghost-toggle{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:1px;color:rgba(232,244,255,0.4)}
+.toggle-btn{padding:4px 12px;font-family:'Rajdhani';font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.12s;border:1px solid}
+
+/* Speed setting */
+.speed-row{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:1px;color:rgba(232,244,255,0.4)}
+.speed-btn{width:24px;height:24px;border:1px solid rgba(0,245,255,0.2);background:transparent;color:var(--c0);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.speed-btn:hover{background:rgba(0,245,255,0.1)}
+#speed-val{font-family:'Orbitron';font-size:12px;color:var(--c0);min-width:32px;text-align:center}
+
+/* BPM override for custom */
+.bpm-override{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:1px;color:rgba(232,244,255,0.4)}
+.bpm-override input{width:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(0,245,255,0.18);color:var(--txt);font-family:'Orbitron';font-size:12px;text-align:center;padding:3px 6px;outline:none}
+.bpm-override input:focus{border-color:rgba(0,245,255,0.45)}
+
+.play-btn{
+  width:220px;padding:13px;
+  font-family:'Orbitron';font-size:14px;font-weight:700;letter-spacing:4px;
+  background:var(--c0);color:var(--bg);border:none;cursor:pointer;transition:all 0.15s;
+  clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+  position:relative;overflow:hidden;
+}
+.play-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);transform:translateX(-100%);transition:transform 0.3s}
+.play-btn:hover::after{transform:translateX(100%)}
+.play-btn:hover{background:#fff;transform:scale(1.02)}
+
+/* Leaderboard badge in detail panel */
+.best-score-badge{display:flex;gap:16px;padding:8px 18px;background:rgba(255,255,255,0.02);border:1px solid rgba(0,245,255,0.08);font-size:11px;letter-spacing:1px}
+.bs-item{text-align:center}
+.bs-label{color:rgba(232,244,255,0.3);font-size:9px;letter-spacing:2px;margin-bottom:2px}
+.bs-val{font-family:'Orbitron';font-size:13px;font-weight:700;color:var(--c0)}
+
+/* ═══════════════════════════════════════
+   GAME HUD
+═══════════════════════════════════════ */
+#screen-game{background:var(--bg)}
+.g-hud{
+  display:flex;align-items:center;padding:7px 20px;gap:16px;
+  border-bottom:1px solid rgba(0,245,255,0.08);flex-shrink:0;
+  background:rgba(5,8,15,0.95);position:relative;z-index:20;
+}
+.g-hud-left{display:flex;flex-direction:column;gap:1px;min-width:130px}
+.g-hud-title{font-family:'Orbitron';font-size:10px;font-weight:700;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.g-hud-diff{font-size:9px;color:rgba(232,244,255,0.3);letter-spacing:1px}
+
+/* Life bar */
+.life-wrap{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.life-label{display:flex;justify-content:space-between;align-items:center;font-family:'Orbitron';font-size:8px;letter-spacing:2px;color:rgba(232,244,255,0.35)}
+.life-bar-track{height:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;position:relative}
+.life-bar-fill{height:100%;border-radius:4px;transition:width 0.12s ease,background 0.3s;background:linear-gradient(90deg,var(--easy),var(--med));position:relative}
+.life-bar-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,0.25) 0%,transparent 50%);border-radius:4px}
+.life-bar-fill.danger{background:linear-gradient(90deg,var(--c1),#ff6b00)}
+.life-bar-fill.critical{background:var(--c1);animation:hp-pulse 0.35s ease-in-out infinite}
+@keyframes hp-pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* Score/combo */
+.g-hud-score{font-family:'Orbitron';font-size:22px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,var(--c0),var(--c3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;min-width:110px;transition:transform 0.05s}
+.g-hud-score.pop{transform:scale(1.08)}
+.g-hud-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:90px}
+.g-combo{font-family:'Orbitron';font-size:16px;font-weight:700;color:var(--c2)}
+.g-combo small{font-size:8px;color:rgba(232,244,255,0.3);letter-spacing:2px;margin-left:3px;vertical-align:middle}
+.g-acc{font-size:10px;color:rgba(232,244,255,0.35);letter-spacing:1px}
+
+/* Progress bar */
+.g-progress{height:3px;background:rgba(255,255,255,0.05);flex-shrink:0;position:relative}
+.g-progress-fill{height:100%;background:linear-gradient(90deg,var(--c3),var(--c0));width:0;transition:width 0.06s linear}
+.g-progress-tick{position:absolute;top:0;width:2px;height:100%;background:rgba(255,255,255,0.15)}
+
+/* Game area */
+.g-area{flex:1;position:relative;display:flex;justify-content:center;overflow:hidden;min-height:0;background:var(--bg2)}
+.g-area-bg{position:absolute;inset:0;z-index:0;pointer-events:none}
+/* Subtle grid */
+.g-area-grid{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(rgba(0,245,255,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.012) 1px,transparent 1px);
+  background-size:40px 40px}
+/* Top fade */
+.g-area::after{content:'';position:absolute;left:0;right:0;top:0;height:100px;background:linear-gradient(180deg,var(--bg2) 0%,transparent 100%);pointer-events:none;z-index:8}
+
+/* BG video */
+#bg-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.25;z-index:0;pointer-events:none;display:none}
+#bg-video.active{display:block}
+#bg-video-vignette{display:none;position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 20%,rgba(5,8,15,0.75) 100%);pointer-events:none;z-index:1}
+#bg-video-vignette.active{display:block}
+
+/* Canvas for particles */
+#particle-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:7}
+
+/* Lanes */
+#lanes-wrap{position:relative;height:100%;display:flex;z-index:2}
+.lane{position:relative;height:100%;overflow:visible}
+.lane-track{position:absolute;inset:0}
+.lane:not(:last-child) .lane-track{border-right:1px solid rgba(255,255,255,0.06)}
+.lane-hitline{position:absolute;left:0;right:0;height:3px;z-index:4;pointer-events:none}
+.lane-flash{position:absolute;inset:0;opacity:0;pointer-events:none;z-index:3;transition:opacity 0.04s}
+.lane-flash.on{opacity:0.15}
+.lane-receptor{
+  position:absolute;left:6px;right:6px;height:26px;
+  border-radius:4px;border:2px solid;background:rgba(0,0,0,0.55);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron';font-size:12px;font-weight:700;
+  z-index:5;transition:transform 0.06s,background 0.06s,box-shadow 0.06s
+}
+.lane-receptor.lit{transform:scaleY(0.82)}
+
+/* Notes */
+.note{
+  position:absolute;left:6px;right:6px;
+  border-radius:3px;z-index:6;pointer-events:none;
+  border-top:2px solid rgba(255,255,255,0.55);
+}
+/* Hold notes */
+.hold-body{position:absolute;left:6px;right:6px;z-index:5;pointer-events:none;border-radius:0 0 3px 3px}
+.hold-cap{position:absolute;left:6px;right:6px;height:18px;border-radius:3px;z-index:6;pointer-events:none;border-top:2px solid rgba(255,255,255,0.55)}
+
+/* Judgment */
+#judgment{position:absolute;top:30%;left:50%;transform:translateX(-50%);z-index:30;pointer-events:none;text-align:center;white-space:nowrap}
+.jtext{display:block;font-family:'Orbitron';font-size:20px;font-weight:900;letter-spacing:4px;animation:jpop 0.5s ease-out forwards}
+@keyframes jpop{0%{opacity:1;transform:scale(1.5) translateY(0)}40%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:scale(0.85) translateY(-20px)}}
+.jtext.early,.jtext.late{font-size:11px;letter-spacing:3px;color:rgba(232,244,255,0.5)!important;text-shadow:none!important;margin-top:2px}
+
+/* Combo pop */
+#combo-pop{position:absolute;top:40%;left:50%;transform:translateX(-50%);z-index:30;pointer-events:none;text-align:center}
+.combo-num{display:block;font-family:'Orbitron';font-size:28px;font-weight:900;color:var(--c2);text-shadow:0 0 16px var(--c2);animation:cpop 0.5s ease-out forwards}
+@keyframes cpop{0%{opacity:1;transform:scale(1.5)}60%{opacity:1;transform:scale(1)}100%{opacity:0.6;transform:scale(0.9) translateY(-8px)}}
+
+/* Combo milestone burst */
+#milestone-pop{position:absolute;top:20%;left:50%;transform:translateX(-50%);z-index:31;pointer-events:none;text-align:center}
+.milestone-text{display:block;font-family:'Orbitron';font-size:14px;font-weight:900;letter-spacing:6px;animation:mpop 1.2s ease-out forwards}
+@keyframes mpop{0%{opacity:1;transform:scale(2)}30%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(0.8) translateY(-30px)}}
+
+/* Beat pulse on lanes wrap */
+@keyframes beat-pulse{0%,100%{filter:brightness(1)}15%{filter:brightness(1.15)}}
+
+/* Game over / pause */
+#gameover-overlay{display:none;position:fixed;inset:0;background:rgba(5,8,15,0.9);backdrop-filter:blur(8px);z-index:110;align-items:center;justify-content:center;flex-direction:column;gap:18px}
+#gameover-overlay.on{display:flex}
+.go-title{font-family:'Orbitron';font-size:48px;font-weight:900;letter-spacing:8px;color:var(--c1);text-shadow:0 0 30px var(--c1);animation:go-shake 0.4s ease-out}
+@keyframes go-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.go-sub{font-size:13px;letter-spacing:4px;color:rgba(232,244,255,0.35)}
+.go-stats{display:flex;gap:24px;padding:16px 28px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,45,120,0.2)}
+.go-stat{text-align:center}
+.go-stat-label{font-size:9px;letter-spacing:2px;color:rgba(232,244,255,0.3);margin-bottom:3px}
+.go-stat-val{font-family:'Orbitron';font-size:16px;font-weight:700}
+
+#pause-overlay{display:none;position:fixed;inset:0;background:rgba(5,8,15,0.85);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:20px}
+#pause-overlay.on{display:flex}
+.pause-title{font-family:'Orbitron';font-size:40px;font-weight:900;letter-spacing:10px;color:var(--c0)}
+.pause-info{font-size:11px;letter-spacing:3px;color:rgba(232,244,255,0.25)}
+
+/* Damage flash */
+@keyframes dmg-flash{0%{background:rgba(255,45,120,0.2)}100%{background:transparent}}
+.dmg-flash-el{position:fixed;inset:0;pointer-events:none;z-index:50}
+
+/* ═══════════════════════════════════════
+   RESULTS
+═══════════════════════════════════════ */
+#screen-results{background:var(--bg);align-items:center;justify-content:center;gap:0;position:relative;overflow:hidden}
+#results-bg-canvas{position:absolute;inset:0;z-index:0;opacity:0.4}
+.results-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:22px;padding:28px}
+
+.res-header{text-align:center}
+.res-clear{font-family:'Orbitron';font-size:11px;letter-spacing:6px;color:rgba(232,244,255,0.4);margin-bottom:4px}
+.res-rank{font-family:'Orbitron';font-size:96px;font-weight:900;line-height:1;animation:rank-drop 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards}
+@keyframes rank-drop{0%{opacity:0;transform:scale(2) translateY(-20px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+.res-rank.s{background:linear-gradient(135deg,var(--c2),#fff,var(--c2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 20px rgba(255,230,0,0.6))}
+.res-rank.a{background:linear-gradient(135deg,var(--c0),var(--c3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.res-rank.b{color:var(--c0)}
+.res-rank.c{color:rgba(232,244,255,0.5)}
+.res-rank.f{color:var(--c1);filter:drop-shadow(0 0 10px rgba(255,45,120,0.5))}
+
+.res-card{background:rgba(255,255,255,0.025);border:1px solid rgba(0,245,255,0.12);padding:22px 32px;min-width:340px;position:relative;overflow:hidden}
+.res-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c0)}
+.res-song-name{font-family:'Orbitron';font-size:13px;font-weight:700;letter-spacing:2px;text-align:center;margin-bottom:3px}
+.res-song-diff{font-size:10px;letter-spacing:2px;color:rgba(232,244,255,0.35);text-align:center;margin-bottom:16px}
+.res-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px}
+.rs{text-align:center;animation:stat-rise 0.4s ease-out both}
+@keyframes stat-rise{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+.rs-label{font-size:9px;letter-spacing:3px;color:rgba(232,244,255,0.3);margin-bottom:2px}
+.rs-val{font-family:'Orbitron';font-size:18px;font-weight:700}
+.rs-val.sv{font-size:24px}
+.rs-val.pv{color:var(--c2)}
+.rs-val.gv{color:var(--c0)}
+.rs-val.mv{color:var(--c1)}
+/* Accuracy bar */
+.acc-bar-wrap{width:100%;height:4px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:16px;overflow:hidden}
+.acc-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c0));transition:width 0.8s ease}
+
+/* New best badge */
+.new-best{display:none;font-family:'Orbitron';font-size:9px;letter-spacing:3px;color:var(--c2);padding:4px 10px;border:1px solid var(--c2);margin-bottom:8px;animation:nb-glow 1s ease-in-out infinite alternate}
+.new-best.show{display:inline-block}
+@keyframes nb-glow{0%{box-shadow:0 0 4px var(--c2)}100%{box-shadow:0 0 14px var(--c2)}}
+
+.res-btns{display:flex;gap:10px}
+.btn{padding:9px 20px;border:1px solid rgba(0,245,255,0.2);background:transparent;color:var(--txt);font-family:'Rajdhani';font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.12s}
+.btn:hover{border-color:var(--c0);color:var(--c0);background:rgba(0,245,255,0.06)}
+.btn.primary{background:var(--c0);color:var(--bg);border-color:var(--c0)}
+.btn.primary:hover{background:#fff;border-color:#fff}
+
+/* ═══════════════════════════════════════
+   COUNTDOWN
+═══════════════════════════════════════ */
+#countdown-overlay{
+  position:absolute;inset:0;z-index:50;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+.countdown-num{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(80px,18vw,180px);
+  font-weight:900;
+  color:#fff;
+  text-shadow:0 0 40px var(--c0),0 0 80px var(--c0);
+  animation:countdown-pop 0.9s cubic-bezier(0.22,1,0.36,1) forwards;
+  line-height:1;
+}
+@keyframes countdown-pop{
+  0%  {opacity:0;transform:scale(2.2);}
+  15% {opacity:1;transform:scale(0.88);}
+  60% {opacity:1;transform:scale(1);}
+  100%{opacity:0;transform:scale(0.6);}
+}
+.countdown-go{
+  font-family:'Orbitron',monospace;
+  font-size:clamp(60px,14vw,140px);
+  font-weight:900;
+  background:linear-gradient(135deg,var(--c0),var(--c4));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 30px var(--c0));
+  animation:countdown-go-anim 0.7s cubic-bezier(0.22,1,0.36,1) forwards;
+  line-height:1;
+}
+@keyframes countdown-go-anim{
+  0%  {opacity:0;transform:scale(0.4);}
+  40% {opacity:1;transform:scale(1.1);}
+  70% {transform:scale(0.95);}
+  100%{opacity:0;transform:scale(1.3);}
+}
+#screen-remap{background:var(--bg);align-items:center;justify-content:center;gap:20px}
+.remap-title{font-family:'Orbitron';font-size:18px;font-weight:700;letter-spacing:4px;color:var(--c0)}
+.remap-table{display:flex;flex-direction:column;gap:8px;min-width:460px}
+.remap-row{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.025);border:1px solid rgba(0,245,255,0.08);padding:11px 16px}
+.remap-label{font-family:'Orbitron';font-size:10px;letter-spacing:2px;width:65px}
+.remap-keys{display:flex;gap:6px;flex:1}
+.rkey{width:46px;height:38px;border:1px solid rgba(0,245,255,0.2);background:rgba(0,0,0,0.5);color:var(--txt);font-family:'Orbitron';font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.1s}
+.rkey:hover{border-color:var(--c0);color:var(--c0)}
+.rkey.waiting{border-color:var(--c2);color:var(--c2);animation:blink 0.5s steps(1) infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
+.remap-hint{font-size:11px;color:rgba(232,244,255,0.3);letter-spacing:1px}
+.remap-btns{display:flex;gap:8px}
+
+/* ═══════════════════════════════════════
+   UPLOAD SCREEN
+═══════════════════════════════════════ */
+#screen-upload{background:var(--bg);align-items:center;justify-content:center;overflow-y:auto}
+.upload-screen-inner{display:flex;flex-direction:column;align-items:center;gap:24px;width:100%;max-width:640px;padding:36px 24px}
+.upload-title{font-family:'Orbitron';font-size:20px;font-weight:700;letter-spacing:4px;color:var(--c0);text-align:center}
+.upload-guide{width:100%;background:rgba(0,245,255,0.03);border:1px solid rgba(0,245,255,0.12);padding:18px 22px;font-size:12px;line-height:2.1;letter-spacing:1px;color:rgba(232,244,255,0.5)}
+.upload-guide-title{font-family:'Orbitron';font-size:10px;letter-spacing:3px;color:var(--c0);margin-bottom:10px}
+.upload-osu-btns{display:flex;gap:10px;width:100%}
+.upload-drop-area{width:100%;border:2px dashed rgba(0,245,255,0.25);border-radius:6px;padding:48px 28px;text-align:center;cursor:pointer;transition:all 0.2s;background:rgba(0,245,255,0.015);position:relative}
+.upload-drop-area:hover,.upload-drop-area.drag-over{border-color:var(--c0);background:rgba(0,245,255,0.06)}
+.upload-drop-icon{font-size:44px;margin-bottom:14px;display:block}
+.upload-drop-title{font-family:'Orbitron';font-size:14px;font-weight:700;letter-spacing:3px;color:var(--txt);margin-bottom:8px}
+.upload-drop-sub{font-size:11px;letter-spacing:2px;color:rgba(232,244,255,0.35)}
+.upload-browse-btn{display:inline-block;margin-top:18px;padding:9px 24px;border:1px solid rgba(0,245,255,0.35);background:transparent;color:var(--c0);font-family:'Rajdhani';font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.15s}
+.upload-browse-btn:hover{background:rgba(0,245,255,0.09);border-color:var(--c0)}
+.upload-queue{width:100%;display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto}
+.upload-queue::-webkit-scrollbar{width:3px}
+.upload-queue::-webkit-scrollbar-thumb{background:rgba(0,245,255,0.25)}
+.queue-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-left:3px solid var(--c0)}
+.queue-item.loading{border-left-color:var(--c2)}
+.queue-item.done{border-left-color:var(--c4)}
+.queue-item.error{border-left-color:var(--c1)}
+.queue-icon{font-size:18px;flex-shrink:0}
+.queue-info{flex:1;min-width:0}
+.queue-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.queue-status{font-size:10px;color:rgba(232,244,255,0.35);letter-spacing:1px;margin-top:2px}
+.queue-bpm{font-family:'Orbitron';font-size:10px;color:var(--c0);flex-shrink:0}
+.upload-back-btn{padding:10px 28px;border:1px solid rgba(0,245,255,0.2);background:transparent;color:var(--txt);font-family:'Rajdhani';font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.12s}
+.upload-back-btn:hover{border-color:var(--c0);color:var(--c0);background:rgba(0,245,255,0.06)}
+</style>
+</head>
+<body>
+
+<!-- ═══ TITLE SCREEN ═══ -->
+<div id="screen-title" class="screen">
+  <div class="title-bg"><canvas id="title-canvas"></canvas></div>
+  <div class="title-content">
+    <div class="title-logo">NEONBEAT</div>
+    <div class="title-sub">Rhythm Game</div>
+    <div class="title-press">PRESS ANY KEY OR CLICK TO START</div>
+  </div>
+  <div class="title-version">v3.0</div>
+</div>
+
+<!-- ═══ SONG SELECT ═══ -->
+<div id="screen-select" class="screen hidden">
+  <div class="sel-header">
+    <div class="logo">NEONBEAT</div>
+    <div class="hdr-btns">
+      <button class="hdr-btn" onclick="showScreen('upload')">📂 IMPORT</button>
+      <button class="hdr-btn" onclick="openRemap()">⌨ KEYS</button>
+      <button class="hdr-btn" onclick="showScreen('title')">⌂ TITLE</button>
+    </div>
+  </div>
+  <div class="sel-body">
+    <div class="song-panel">
+      <div class="panel-hdr">TRACK SELECT</div>
+      <div class="song-search">
+        <input type="text" id="song-search-input" placeholder="🔍  SEARCH..." oninput="filterSongs(this.value)">
+      </div>
+      <div class="song-list" id="song-list"></div>
+    </div>
+    <div class="detail-panel">
+      <div class="detail-bg" id="detail-bg"></div>
+      <div class="detail-inner" id="detail-panel">
+        <div style="color:rgba(232,244,255,0.2);font-size:13px;letter-spacing:2px;">← PICK A TRACK</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GAME ═══ -->
+<div id="screen-game" class="screen hidden">
+  <div class="g-hud">
+    <div class="g-hud-left">
+      <div class="g-hud-title" id="g-title">—</div>
+      <div class="g-hud-diff" id="g-diff">—</div>
+    </div>
+    <div class="life-wrap">
+      <div class="life-label"><span>❤ LIFE</span><span id="life-pct">100%</span></div>
+      <div class="life-bar-track"><div class="life-bar-fill" id="life-fill" style="width:100%"></div></div>
+    </div>
+    <div class="g-hud-score" id="g-score">0</div>
+    <div class="g-hud-right">
+      <div class="g-combo"><span id="g-combo">0</span><small>COMBO</small></div>
+      <div class="g-acc" id="g-acc">100.00%</div>
+    </div>
+  </div>
+  <div class="g-progress"><div class="g-progress-fill" id="g-prog"></div></div>
+  <div class="g-area">
+    <video id="bg-video" muted playsinline loop></video>
+    <div id="bg-video-vignette"></div>
+    <div class="g-area-grid"></div>
+    <canvas id="particle-canvas"></canvas>
+    <div id="lanes-wrap"></div>
+    <div id="judgment"></div>
+    <div id="combo-pop"></div>
+    <div id="milestone-pop"></div>
+    <div id="countdown-overlay"></div>
+  </div>
+</div>
+
+<!-- ═══ GAME OVER ═══ -->
+<div id="gameover-overlay">
+  <div class="go-title">GAME OVER</div>
+  <div class="go-sub">YOUR LIFE RAN OUT</div>
+  <div class="go-stats">
+    <div class="go-stat"><div class="go-stat-label">SCORE</div><div class="go-stat-val" id="go-score">0</div></div>
+    <div class="go-stat"><div class="go-stat-label">COMBO</div><div class="go-stat-val" id="go-combo">0</div></div>
+    <div class="go-stat"><div class="go-stat-label">ACC</div><div class="go-stat-val" id="go-acc">—</div></div>
+  </div>
+  <div style="display:flex;gap:12px;margin-top:4px;">
+    <button class="btn primary" onclick="retryAfterGameOver()">RETRY</button>
+    <button class="btn" onclick="quitMenu()">QUIT</button>
+  </div>
+</div>
+
+<!-- ═══ PAUSE ═══ -->
+<div id="pause-overlay">
+  <div class="pause-title">PAUSED</div>
+  <div class="pause-info" id="pause-info">—</div>
+  <div style="display:flex;gap:12px;">
+    <button class="btn primary" onclick="resumeGame()">RESUME</button>
+    <button class="btn" onclick="quitMenu()">QUIT</button>
+  </div>
+  <div style="font-size:11px;color:rgba(232,244,255,0.25);letter-spacing:2px;margin-top:4px;">ESC to resume</div>
+</div>
+
+<!-- ═══ RESULTS ═══ -->
+<div id="screen-results" class="screen hidden">
+  <canvas id="results-bg-canvas"></canvas>
+  <div class="results-inner">
+    <div class="res-header">
+      <div class="res-clear" id="res-clear-text">CLEAR!</div>
+      <div class="new-best" id="new-best-badge">★ NEW BEST</div>
+      <div class="res-rank" id="res-rank">A</div>
+    </div>
+    <div class="res-card">
+      <div class="res-song-name" id="res-name">—</div>
+      <div class="res-song-diff" id="res-dif">—</div>
+      <div class="res-stats">
+        <div class="rs" style="animation-delay:0.05s"><div class="rs-label">SCORE</div><div class="rs-val sv" id="r-score">0</div></div>
+        <div class="rs" style="animation-delay:0.1s"><div class="rs-label">ACCURACY</div><div class="rs-val" id="r-acc">0%</div></div>
+        <div class="rs" style="animation-delay:0.15s"><div class="rs-label">PERFECT</div><div class="rs-val pv" id="r-perf">0</div></div>
+        <div class="rs" style="animation-delay:0.2s"><div class="rs-label">GOOD</div><div class="rs-val gv" id="r-good">0</div></div>
+        <div class="rs" style="animation-delay:0.25s"><div class="rs-label">MISS</div><div class="rs-val mv" id="r-miss">0</div></div>
+        <div class="rs" style="animation-delay:0.3s"><div class="rs-label">MAX COMBO</div><div class="rs-val" id="r-combo">0</div></div>
+      </div>
+      <div class="acc-bar-wrap"><div class="acc-bar-fill" id="acc-bar" style="width:0%"></div></div>
+    </div>
+    <div class="res-btns">
+      <button class="btn primary" onclick="retry()">RETRY</button>
+      <button class="btn" onclick="backSel()">SONG SELECT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ KEY REMAP ═══ -->
+<div id="screen-remap" class="screen hidden">
+  <div class="remap-title">KEY BINDING</div>
+  <div class="remap-table" id="remap-table"></div>
+  <div class="remap-hint">Click a slot, then press any key</div>
+  <div class="remap-btns">
+    <button class="btn primary" onclick="saveRemap()">SAVE</button>
+    <button class="btn" onclick="resetRemap()">DEFAULTS</button>
+    <button class="btn" onclick="cancelRemap()">CANCEL</button>
+  </div>
+</div>
+
+<!-- ═══ UPLOAD ═══ -->
+<div id="screen-upload" class="screen hidden">
+  <div class="upload-screen-inner">
+    <div class="upload-title">📂 IMPORT BEATMAPS</div>
+    <div class="upload-guide">
+      <div class="upload-guide-title">HOW TO IMPORT OSU! MANIA MAPS</div>
+      <div><span style="color:var(--c2);font-weight:700;">1.</span> Open the osu! beatmap library below</div>
+      <div><span style="color:var(--c2);font-weight:700;">2.</span> Search for any song — e.g. <em style="color:var(--txt);">"hatsune miku"</em>, <em style="color:var(--txt);">"vocaloid"</em></div>
+      <div><span style="color:var(--c2);font-weight:700;">3.</span> Filter by <strong style="color:var(--txt);">osu!mania</strong> mode for best results</div>
+      <div><span style="color:var(--c2);font-weight:700;">4.</span> Download a map → get a <strong style="color:var(--c0);">.osz file</strong></div>
+      <div><span style="color:var(--c2);font-weight:700;">5.</span> Drop the <strong style="color:var(--c0);">.osz file</strong> below — done! ✅</div>
+      <div style="margin-top:8px;font-size:10px;color:rgba(232,244,255,0.25);">Also accepts MP3/OGG/WAV audio files or raw .osu + audio pairs</div>
+    </div>
+    <div class="upload-osu-btns">
+      <button class="btn primary" style="flex:1;padding:12px;" onclick="window.open('https://osu.ppy.sh/beatmapsets?m=3','_blank')">🌐 OSU! MANIA MAPS</button>
+      <button class="btn" style="flex:1;padding:12px;border-color:var(--c3);color:var(--c3);" onclick="window.open('https://osu.ppy.sh/beatmapsets?q=hatsune+miku&m=3','_blank')">🌸 MIKU MAPS</button>
+    </div>
+    <div class="upload-drop-area" id="upload-drop-area" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <span class="upload-drop-icon">📦</span>
+      <div class="upload-drop-title">DROP .OSZ FILES HERE</div>
+      <div class="upload-drop-sub" style="margin-bottom:5px;">Beatmaps with video are supported — the video will play behind the notes!</div>
+      <div class="upload-drop-sub" style="color:rgba(232,244,255,0.25);margin-bottom:14px;">Also works with .osu + audio pairs, or plain audio files</div>
+      <button class="upload-browse-btn" onclick="document.getElementById('file-input').click()">BROWSE FILES</button>
+    </div>
+    <div class="upload-queue" id="upload-queue" style="display:none;"></div>
+    <button class="upload-back-btn" onclick="showScreen('select')">← BACK TO SONG SELECT</button>
+  </div>
+  <input type="file" id="file-input" accept=".osz,.osu,audio/*" multiple style="display:none" onchange="onFileSelect(event)">
+</div>
+
+<!-- Damage flash -->
+<div class="dmg-flash-el" id="dmg-flash" style="display:none;"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════════════
+const LANE_W     = 100;
+const NOTE_H     = 20;
+const RECEP_FRAC = 0.88;
+const PERF_WIN   = 100;
+const GOOD_WIN   = 220;
+
+// Speed modifier (fall time in ms at 1.0x)
+const BASE_FALL_MS = 2000;
+let noteSpeed = parseFloat(localStorage.getItem('nb_speed') || '1.0');
+function getFallMs() { return BASE_FALL_MS / noteSpeed; }
+
+// Life
+const MAX_LIFE       = 100;
+const LIFE_PERF_GAIN = 3.5;
+const LIFE_GOOD_GAIN = 1.5;
+const LIFE_MISS_LOSS = 5;
+const LIFE_DANGER    = 30;
+const LIFE_CRITICAL  = 15;
+
+const COL      = ['#00f5ff','#ff2d78','#ffe600','#7b2fff','#00ff9d'];
+const DIFF_COL = { easy:'#00ff9d', medium:'#00f5ff', hard:'#ffe600', insane:'#ff2d78' };
+
+const DEFAULT_KEYS = {
+  easy:   ['Q','P'],
+  medium: ['D','G','J'],
+  hard:   ['D','F','J','K'],
+  insane: ['D','F','G','J','K'],
+};
+
+// Milestone combos
+const MILESTONES = [50,100,200,300,500,750,1000];
+const MILESTONE_MSGS = { 50:'FIFTY',100:'CENTURY',200:'TWO HUNDRED',300:'THREE HUNDRED',500:'FIVE HUNDRED',750:'SEVEN FIFTY',1000:'ONE THOUSAND' };
+
+// ═══════════════════════════════════════════════════
+//  BEST SCORES
+// ═══════════════════════════════════════════════════
+let bestScores = {};
+try { bestScores = JSON.parse(localStorage.getItem('nb_best') || '{}'); } catch(e) {}
+function getBestKey(songId, diff) { return `${songId}_${diff}`; }
+function saveBest(songId, diff, score, acc, combo) {
+  const k = getBestKey(songId, diff);
+  const prev = bestScores[k];
+  if (!prev || score > prev.score) {
+    bestScores[k] = { score, acc, combo };
+    try { localStorage.setItem('nb_best', JSON.stringify(bestScores)); } catch(e) {}
+    return true; // new best
+  }
+  return false;
+}
+function getBest(songId, diff) { return bestScores[getBestKey(songId, diff)] || null; }
+
+// ═══════════════════════════════════════════════════
+//  TITLE SCREEN ANIMATION
+// ═══════════════════════════════════════════════════
+function initTitle() {
+  const canvas = document.getElementById('title-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width  = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Spawn floating particles
+  for (let i = 0; i < 80; i++) {
+    particles.push({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.4, vy: -Math.random() * 0.6 - 0.1,
+      r: Math.random() * 2 + 0.5,
+      col: ['#00f5ff','#7b2fff','#ff2d78','#ffe600','#00ff9d'][Math.floor(Math.random()*5)],
+      life: Math.random(),
+    });
+  }
+
+  let titleRaf;
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.life -= 0.003;
+      if (p.life <= 0 || p.y < -10) {
+        p.x = Math.random() * W; p.y = H + 5;
+        p.vx = (Math.random()-0.5)*0.4; p.vy = -Math.random()*0.6-0.1;
+        p.life = 0.5+Math.random()*0.5;
+        p.col = ['#00f5ff','#7b2fff','#ff2d78','#ffe600','#00ff9d'][Math.floor(Math.random()*5)];
+      }
+      ctx.globalAlpha = p.life * 0.7;
+      ctx.fillStyle = p.col;
+      ctx.shadowColor = p.col; ctx.shadowBlur = 6;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    titleRaf = requestAnimationFrame(draw);
+  }
+  draw();
+
+  // Click/keypress to start
+  const go = () => {
+    cancelAnimationFrame(titleRaf);
+    showScreen('select');
+  };
+  document.getElementById('screen-title').addEventListener('click', go);
+  document.addEventListener('keydown', function kd(e) {
+    if (document.getElementById('screen-title').classList.contains('hidden')) {
+      document.removeEventListener('keydown', kd);
+      return;
+    }
+    go();
+    document.removeEventListener('keydown', kd);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  WEB AUDIO
+// ═══════════════════════════════════════════════════
+let AC = null;
+function getAC() {
+  if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if (AC.state === 'suspended') AC.resume();
+  return AC;
+}
+let masterGain = null;
+function getMaster() {
+  const ac = getAC();
+  if (!masterGain) {
+    masterGain = ac.createGain();
+    masterGain.gain.value = 0.55;
+    masterGain.connect(ac.destination);
+  }
+  return masterGain;
+}
+
+// ── Hit SFX ──
+function sfxNote(col, isPerfect) {
+  const ac = getAC(), t = ac.currentTime;
+  const laneIdx = COL.indexOf(col);
+  const freqs = [330,392,440,523,587];
+  const freq = freqs[laneIdx] || 440;
+  // Click transient
+  { const buf=ac.createBuffer(1,Math.floor(ac.sampleRate*0.01),ac.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+    const src=ac.createBufferSource(); src.buffer=buf;
+    const filt=ac.createBiquadFilter(); filt.type='bandpass'; filt.frequency.value=3500; filt.Q.value=1;
+    const g=ac.createGain(); g.gain.setValueAtTime(isPerfect?0.5:0.35,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.01);
+    src.connect(filt); filt.connect(g); g.connect(getMaster()); src.start(t); }
+  // Tone
+  { const g=ac.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(isPerfect?0.28:0.18,t+0.007); g.gain.exponentialRampToValueAtTime(0.001,t+(isPerfect?0.2:0.12)); g.connect(getMaster());
+    const o=ac.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(freq,t);
+    if(isPerfect) o.frequency.linearRampToValueAtTime(freq*1.04,t+0.05);
+    o.connect(g); o.start(t); o.stop(t+0.25);
+    const o2=ac.createOscillator(); o2.type='triangle'; o2.frequency.setValueAtTime(freq*2,t);
+    const g2=ac.createGain(); g2.gain.setValueAtTime(0,t); g2.gain.linearRampToValueAtTime(isPerfect?0.09:0.05,t+0.007); g2.gain.exponentialRampToValueAtTime(0.001,t+0.09);
+    o2.connect(g2); g2.connect(getMaster()); o2.start(t); o2.stop(t+0.1); }
+  if(isPerfect) {
+    const g=ac.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.1,t+0.01); g.gain.exponentialRampToValueAtTime(0.001,t+0.16); g.connect(getMaster());
+    const o=ac.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(freq*4,t); o.frequency.exponentialRampToValueAtTime(freq*5,t+0.07); o.connect(g); o.start(t); o.stop(t+0.18); }
+}
+
+function sfxMiss() {
+  const ac=getAC(), g=ac.createGain(); g.connect(getMaster());
+  g.gain.setValueAtTime(0.2,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.22);
+  const buf=ac.createBuffer(1,ac.sampleRate*0.22,ac.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+  const src=ac.createBufferSource(); src.buffer=buf;
+  const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value=350;
+  src.connect(f); f.connect(g); src.start();
+}
+
+function sfxGameOver() {
+  const ac=getAC();
+  [220,196,165,147].forEach((f,i) => {
+    const g=ac.createGain(); g.connect(getMaster());
+    g.gain.setValueAtTime(0,ac.currentTime+i*0.11); g.gain.linearRampToValueAtTime(0.3,ac.currentTime+i*0.11+0.04); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.11+0.3);
+    const o=ac.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g);
+    o.start(ac.currentTime+i*0.11); o.stop(ac.currentTime+i*0.11+0.35);
+  });
+}
+
+function sfxMilestone() {
+  const ac=getAC(), t=ac.currentTime;
+  [523,659,784,1047].forEach((f,i) => {
+    const g=ac.createGain(); g.connect(getMaster());
+    g.gain.setValueAtTime(0,t+i*0.06); g.gain.linearRampToValueAtTime(0.2,t+i*0.06+0.02); g.gain.exponentialRampToValueAtTime(0.001,t+i*0.06+0.2);
+    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g);
+    o.start(t+i*0.06); o.stop(t+i*0.06+0.22);
+  });
+}
+
+// ── Background Music Sequencer ──
+let musicNodes=[], musicScheduler=null;
+function stopMusic() {
+  musicNodes.forEach(n=>{try{n.stop()}catch(e){}});
+  musicNodes=[]; clearInterval(musicScheduler); musicScheduler=null;
+}
+function startMusicAt(bpm, songId, musicStartAcT) {
+  stopMusic();
+  const ac=getAC(), beat=60/bpm;
+  const stepFn=buildSongSequencer(songId);
+  let step=0; let nextBeatTime=musicStartAcT;
+  function schedule() {
+    while(nextBeatTime < ac.currentTime+0.35) {
+      stepFn(step, nextBeatTime, beat*0.5);
+      step++; nextBeatTime+=beat*0.5;
+    }
+  }
+  schedule(); musicScheduler=setInterval(schedule,80);
+  return musicStartAcT;
+}
+
+function runCountdown(totalMs) {
+  const el=document.getElementById('countdown-overlay');
+  el.innerHTML='';
+  const steps=[
+    {label:'3', delay:0},
+    {label:'2', delay:1000},
+    {label:'1', delay:2000},
+    {label:'GO!', delay:3000, isGo:true},
+  ];
+  steps.forEach(({label,delay,isGo})=>{
+    setTimeout(()=>{
+      el.innerHTML='';
+      if(delay>=totalMs)return;
+      const num=document.createElement('div');
+      num.className=isGo?'countdown-go':'countdown-num';
+      // colour the numbers
+      if(!isGo){
+        const cols=['var(--c1)','var(--c2)','var(--c0)'];
+        num.style.color=cols[[0,1000,2000].indexOf(delay)]||'#fff';
+        num.style.textShadow=`0 0 40px ${cols[[0,1000,2000].indexOf(delay)]||'#fff'}`;
+      }
+      num.textContent=label;
+      el.appendChild(num);
+      // Clear after animation
+      setTimeout(()=>{ if(el.firstChild===num) el.innerHTML=''; }, isGo?700:900);
+    }, delay);
+  });
+}
+  stopMusic();
+  const ac=getAC(), beat=60/bpm, patterns=getSongPattern(songId);
+  let step=0; const musicStartAcT=ac.currentTime+0.1; let nextBeatTime=musicStartAcT;
+  function schedule() {
+    while(nextBeatTime < ac.currentTime+0.3) {
+      const t=nextBeatTime, s=step%16;
+      if(s%4===0) playKick(t);
+      if(s===4||s===12) playSnare(t);
+      if(s%2===0) playHihat(t,s%4===0?0.16:0.09);
+      if(patterns.melody[s]>0) playMelody(t,patterns.melody[s],beat*0.45,patterns.wave);
+      if(patterns.bass[s]>0) playBass(t,patterns.bass[s],beat*0.9);
+      step++; nextBeatTime+=beat*0.5;
+    }
+  }
+  schedule(); musicScheduler=setInterval(schedule,100);
+  return musicStartAcT;
+}
+function playKick(t){const ac=getAC(),g=ac.createGain();g.connect(getMaster());g.gain.setValueAtTime(0.65,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.32);const o=ac.createOscillator();o.type='sine';o.frequency.setValueAtTime(175,t);o.frequency.exponentialRampToValueAtTime(38,t+0.14);o.connect(g);o.start(t);o.stop(t+0.36);musicNodes.push(o)}
+function playSnare(t){const ac=getAC(),g=ac.createGain();g.connect(getMaster());g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.16);const buf=ac.createBuffer(1,ac.sampleRate*0.16,ac.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);const src=ac.createBufferSource();src.buffer=buf;const f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=2200;f.Q.value=0.5;src.connect(f);f.connect(g);src.start(t);musicNodes.push(src)}
+function playHihat(t,vol){const ac=getAC(),g=ac.createGain();g.connect(getMaster());g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.05);const buf=ac.createBuffer(1,ac.sampleRate*0.05,ac.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);const src=ac.createBufferSource();src.buffer=buf;const f=ac.createBiquadFilter();f.type='highpass';f.frequency.value=9000;src.connect(f);f.connect(g);src.start(t);musicNodes.push(src)}
+function playMelody(t,freq,dur,wave){const ac=getAC(),g=ac.createGain();g.connect(getMaster());g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.14,t+0.02);g.gain.setValueAtTime(0.14,t+dur-0.03);g.gain.linearRampToValueAtTime(0,t+dur);const o=ac.createOscillator();o.type=wave||'square';o.frequency.value=freq;o.connect(g);o.start(t);o.stop(t+dur+0.01);musicNodes.push(o)}
+function playBass(t,freq,dur){const ac=getAC(),g=ac.createGain();g.connect(getMaster());g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.25,t+0.02);g.gain.setValueAtTime(0.25,t+dur*0.7);g.gain.linearRampToValueAtTime(0,t+dur);const o=ac.createOscillator();o.type='sawtooth';o.frequency.value=freq;const f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=480;o.connect(f);f.connect(g);o.start(t);o.stop(t+dur+0.01);musicNodes.push(o)}
+
+function getSongPattern(id) {
+  const p = {
+    1:{wave:'square',melody:[587,0,0,0,523,0,659,0,0,0,587,0,0,523,0,0],bass:[147,0,147,0,0,0,147,0,110,0,110,0,0,0,110,0]},
+    2:{wave:'sine',melody:[329,0,0,392,0,0,440,0,0,392,0,0,349,0,0,0],bass:[82,0,0,0,82,0,0,0,73,0,0,0,73,0,0,0]},
+    3:{wave:'triangle',melody:[523,0,659,0,784,659,0,523,0,659,0,784,659,0,523,0],bass:[131,0,0,131,0,0,131,0,98,0,0,98,0,0,110,0]},
+    4:{wave:'sine',melody:[392,0,0,349,0,330,0,0,370,0,0,330,0,294,0,0],bass:[98,0,0,0,92,0,0,0,98,0,0,0,87,0,0,0]},
+    5:{wave:'sawtooth',melody:[880,831,784,740,698,0,740,784,831,880,0,0,784,740,698,0],bass:[110,0,0,110,0,110,0,0,123,0,0,123,0,0,110,0]},
+    6:{wave:'sawtooth',melody:[1047,0,740,0,1047,0,880,0,932,0,659,0,932,0,1047,0],bass:[65,65,0,0,65,0,65,0,73,73,0,0,73,0,65,0]},
+    7:{wave:'square',melody:[440,0,440,0,523,440,0,392,440,0,440,523,0,440,392,0],bass:[110,0,110,0,110,0,82,0,110,0,110,0,92,0,82,0]},
+    8:{wave:'sine',melody:[311,0,0,0,370,0,415,0,0,0,370,0,0,311,0,0],bass:[78,0,0,0,78,0,0,0,62,0,0,0,62,0,0,0]},
+    9:{wave:'sawtooth',melody:[659,659,0,659,587,0,523,587,659,0,784,0,659,587,523,0],bass:[165,0,165,0,147,0,131,0,165,0,196,0,165,0,147,0]},
+    10:{wave:'triangle',melody:[523,0,659,0,784,0,659,523,0,659,0,784,880,0,784,0],bass:[131,0,0,0,131,0,0,0,110,0,0,0,110,0,0,0]},
+  };
+  return p[id] || p[1];
+}
+
+// ═══════════════════════════════════════════════════
+//  PARTICLES
+// ═══════════════════════════════════════════════════
+let pCanvas, pCtx, particles = [];
+function initParticles() {
+  pCanvas = document.getElementById('particle-canvas');
+  pCtx = pCanvas.getContext('2d');
+  resizeParticles();
+  window.addEventListener('resize', resizeParticles);
+}
+function resizeParticles() {
+  if (!pCanvas) return;
+  const area = document.querySelector('.g-area');
+  if (!area) return;
+  pCanvas.width  = area.offsetWidth;
+  pCanvas.height = area.offsetHeight;
+}
+function spawnParticles(x, y, col, isPerfect) {
+  const count = isPerfect ? 18 : 10;
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI*2/count)*i + (Math.random()-0.5)*0.5;
+    const speed = (Math.random()*3+2) * (isPerfect?1.4:1);
+    particles.push({
+      x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
+      r: Math.random()*3+1.5, col,
+      life: 1, decay: 0.02+Math.random()*0.03,
+      gravity: 0.12,
+    });
+  }
+  // Star burst for perfect
+  if (isPerfect) {
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI*2/6)*i;
+      particles.push({
+        x, y, vx: Math.cos(angle)*7, vy: Math.sin(angle)*7,
+        r: 2, col:'#fff',
+        life: 1, decay: 0.04, gravity: 0.05,
+        spark: true,
+      });
+    }
+  }
+}
+function drawParticles() {
+  if (!pCtx) return;
+  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+  for (let i = particles.length-1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.vx *= 0.97; p.life -= p.decay;
+    if (p.life <= 0) { particles.splice(i,1); continue; }
+    pCtx.globalAlpha = p.life;
+    if (p.spark) {
+      pCtx.strokeStyle = p.col; pCtx.lineWidth = p.r;
+      pCtx.beginPath(); pCtx.moveTo(p.x-p.vx*3, p.y-p.vy*3); pCtx.lineTo(p.x, p.y); pCtx.stroke();
+    } else {
+      pCtx.fillStyle = p.col;
+      pCtx.shadowColor = p.col; pCtx.shadowBlur = 6;
+      pCtx.beginPath(); pCtx.arc(p.x, p.y, p.r*p.life, 0, Math.PI*2); pCtx.fill();
+    }
+  }
+  pCtx.globalAlpha = 1; pCtx.shadowBlur = 0;
+}
+
+// ═══════════════════════════════════════════════════
+//  RESULTS CANVAS FIREWORKS
+// ═══════════════════════════════════════════════════
+let resultsRaf = null, resultsParticles = [];
+function startResultsCanvas(rank) {
+  const canvas = document.getElementById('results-bg-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  resultsParticles = [];
+  const cols = rank === 's' ? ['#ffe600','#fff','#ffd700'] : rank === 'a' ? ['#00f5ff','#7b2fff'] : ['#00f5ff'];
+  function burst() {
+    const cx = Math.random()*canvas.width, cy = Math.random()*canvas.height*0.7;
+    for (let i = 0; i < 40; i++) {
+      const angle = Math.random()*Math.PI*2, speed = Math.random()*4+2;
+      resultsParticles.push({
+        x:cx, y:cy, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
+        r:Math.random()*3+1, col:cols[Math.floor(Math.random()*cols.length)],
+        life:1, decay:0.012+Math.random()*0.01, gravity:0.1
+      });
+    }
+  }
+  if (rank === 's' || rank === 'a') { burst(); burst(); }
+  let burstTimer = (rank === 's') ? setInterval(burst, 800) : (rank === 'a') ? setInterval(burst, 1400) : null;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for (let i = resultsParticles.length-1; i >= 0; i--) {
+      const p = resultsParticles[i];
+      p.x+=p.vx; p.y+=p.vy; p.vy+=p.gravity; p.vx*=0.98; p.life-=p.decay;
+      if (p.life <= 0) { resultsParticles.splice(i,1); continue; }
+      ctx.globalAlpha = p.life*0.7; ctx.fillStyle = p.col;
+      ctx.shadowColor = p.col; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    resultsRaf = requestAnimationFrame(draw);
+  }
+  draw();
+  return () => { if (burstTimer) clearInterval(burstTimer); };
+}
+function stopResultsCanvas() {
+  if (resultsRaf) cancelAnimationFrame(resultsRaf);
+  resultsRaf = null; resultsParticles = [];
+}
+
+// ═══════════════════════════════════════════════════
+//  NOTE GENERATORS
+// ═══════════════════════════════════════════════════
+function genEasy(bpm, lanes, durMs) {
+  const beat=60000/bpm, DUR=durMs||90000, notes=[];
+  let t=beat*4, id=0, lastLane=-1;
+  while(t<DUR-beat*4) {
+    let lane; do{lane=Math.floor(Math.random()*lanes)}while(lane===lastLane);
+    notes.push({time:Math.round(t),lane,id:id++});
+    lastLane=lane; t+=beat*(Math.random()<0.6?2:4);
+  }
+  notes.sort((a,b)=>a.time-b.time);
+  return {notes,dur:DUR,lanes};
+}
+function genMedium(bpm, lanes, durMs) {
+  const beat=60000/bpm, DUR=durMs||90000, notes=[];
+  let t=beat*2, id=0, lastLane=-1;
+  while(t<DUR-beat*2) {
+    if(Math.random()<0.22){t+=beat;continue}
+    let lane; do{lane=Math.floor(Math.random()*lanes)}while(lane===lastLane);
+    notes.push({time:Math.round(t),lane,id:id++});
+    lastLane=lane; t+=beat*(Math.random()<0.15?2:1);
+  }
+  notes.sort((a,b)=>a.time-b.time);
+  return {notes,dur:DUR,lanes};
+}
+function genHard(bpm, lanes, durMs) {
+  const beat=60000/bpm, step=beat*0.5, DUR=durMs||90000, notes=[];
+  let id=0, lastLane=-1; const usedAt={};
+  function add(time,lane){const k=Math.round(time);if(!usedAt[k])usedAt[k]=new Set();if(usedAt[k].has(lane))return;usedAt[k].add(lane);notes.push({time:k,lane,id:id++})}
+  let t=beat*2;
+  while(t<DUR-beat*2) {
+    const r=Math.random();
+    if(r<0.20){}
+    else if(r<0.88){let lane,tries=0;do{lane=Math.floor(Math.random()*lanes);tries++}while(lane===lastLane&&tries<5);add(t,lane);lastLane=lane}
+    else{const l1=Math.floor(Math.random()*lanes);let l2;do{l2=Math.floor(Math.random()*lanes)}while(l2===l1);add(t,l1);add(t,l2);lastLane=l2}
+    t+=step*(Math.random()<0.75?1:2);
+  }
+  notes.sort((a,b)=>a.time-b.time||a.lane-b.lane);
+  return {notes,dur:DUR,lanes};
+}
+function genInsane(bpm, lanes, durMs) {
+  const beat=60000/bpm, step=beat*0.25, DUR=durMs||90000, notes=[];
+  let id=0, lastLane=-1; const usedAt=new Map();
+  function add(time,lane){const t=Math.round(time);if(!usedAt.has(t))usedAt.set(t,new Set());if(usedAt.get(t).has(lane))return;usedAt.get(t).add(lane);notes.push({time:t,lane,id:id++})}
+  for(let t=beat*2;t<DUR-beat*2;t+=step){
+    const r=Math.random();
+    if(r<0.45)continue;
+    else if(r<0.85){let lane,tries=0;do{lane=Math.floor(Math.random()*lanes);tries++}while(lane===lastLane&&tries<4);add(t,lane);lastLane=lane}
+    else{const l1=Math.floor(Math.random()*lanes);let l2;do{l2=Math.floor(Math.random()*lanes)}while(l2===l1);add(t,l1);add(t,l2);lastLane=l2}
+  }
+  notes.sort((a,b)=>a.time-b.time||a.lane-b.lane);
+  return {notes,dur:DUR,lanes};
+}
+
+// ═══════════════════════════════════════════════════
+//  SONGS
+// ═══════════════════════════════════════════════════
+const SONGS = [
+  {id:1, title:'CIRCUIT BREAKER',artist:'DJ NEON',     bpm:175,emoji:'⚡',bg:'rgba(0,245,255,0.12)'},
+  {id:2, title:'STELLAR DRIFT',  artist:'AURORA X',    bpm:128,emoji:'🌌',bg:'rgba(123,47,255,0.12)'},
+  {id:3, title:'SAKURA RIOT',    artist:'HANA SYSTEM', bpm:155,emoji:'🌸',bg:'rgba(255,45,120,0.12)'},
+  {id:4, title:'NEON MIDNIGHT',  artist:'SYNTH:WAVE',  bpm:92, emoji:'🌃',bg:'rgba(255,230,0,0.12)'},
+  {id:5, title:'CYBER ANGEL',    artist:'MIKU//OS',    bpm:190,emoji:'👾',bg:'rgba(0,255,157,0.12)'},
+  {id:6, title:'GLASS CANNON',   artist:'FRACTALE',    bpm:200,emoji:'💎',bg:'rgba(255,45,120,0.18)'},
+  {id:7, title:'VOLTAGE DROP',   artist:'GRIDLOK',     bpm:160,emoji:'🔌',bg:'rgba(255,180,0,0.12)'},
+  {id:8, title:'PHANTOM GATE',   artist:'SPECTRAL',    bpm:110,emoji:'👻',bg:'rgba(80,0,180,0.18)'},
+  {id:9, title:'OVERDRIVE',      artist:'BURST//UNIT', bpm:210,emoji:'🔥',bg:'rgba(255,60,0,0.14)'},
+  {id:10,title:'HOLLOW SUN',     artist:'DREAMKODE',   bpm:138,emoji:'🌞',bg:'rgba(0,200,255,0.10)'},
+].map(s=>({...s,durMs:90000,patterns:{
+  easy:genEasy(s.bpm,2,90000),medium:genMedium(s.bpm,3,90000),
+  hard:genHard(s.bpm,4,90000),insane:genInsane(s.bpm,5,90000)
+}}));
+
+// ═══════════════════════════════════════════════════
+//  CUSTOM SONGS
+// ═══════════════════════════════════════════════════
+let customSongs=[], customIdCounter=1000, searchQuery='';
+
+async function detectBPM(audioBuffer) {
+  const sampleRate=audioBuffer.sampleRate, maxSamples=Math.min(audioBuffer.length,sampleRate*30), raw=audioBuffer.getChannelData(0);
+  const winSize=Math.floor(sampleRate*0.01), energy=[];
+  for(let i=0;i<maxSamples-winSize;i+=winSize){let e=0;for(let j=i;j<i+winSize;j++)e+=raw[j]*raw[j];energy.push(e/winSize)}
+  const onsets=[], mean=energy.reduce((a,b)=>a+b,0)/energy.length, thresh=mean*1.4;
+  for(let i=1;i<energy.length-1;i++){if(energy[i]>thresh&&energy[i]>energy[i-1]&&energy[i]>energy[i+1])onsets.push(i*0.01)}
+  if(onsets.length<4)return 120;
+  const iois=[];
+  for(let i=1;i<Math.min(onsets.length,200);i++){const d=onsets[i]-onsets[i-1];if(d>0.2&&d<2.0)iois.push(d)}
+  if(iois.length<2)return 120;
+  const bins={};
+  iois.forEach(d=>{const k=Math.round(d*20)/20;bins[k]=(bins[k]||0)+1});
+  let bestK=0.5,bestV=0;
+  Object.entries(bins).forEach(([k,v])=>{if(v>bestV){bestV=v;bestK=parseFloat(k)}});
+  let bpm=Math.round(60/bestK);
+  while(bpm<80)bpm*=2; while(bpm>200)bpm/=2;
+  return Math.max(80,Math.min(200,bpm));
+}
+
+// Generate waveform data for preview
+function genWaveformData(audioBuffer, cols=60) {
+  const data = audioBuffer.getChannelData(0);
+  const step = Math.floor(data.length / cols);
+  const result = [];
+  for (let i = 0; i < cols; i++) {
+    let sum = 0;
+    for (let j = 0; j < step; j++) sum += Math.abs(data[i*step+j] || 0);
+    result.push(sum / step);
+  }
+  const max = Math.max(...result) || 1;
+  return result.map(v => v/max);
+}
+
+async function loadAudioFile(file) {
+  const queue=document.getElementById('upload-queue');
+  if(queue)queue.style.display='flex';
+  const itemId='qi-'+Date.now()+Math.random();
+  const name=file.name.replace(/\.[^.]+$/,'');
+  if(queue){const item=document.createElement('div');item.className='queue-item loading';item.id=itemId;item.innerHTML=`<div class="queue-icon">⏳</div><div class="queue-info"><div class="queue-name">${file.name}</div><div class="queue-status">Decoding audio...</div></div>`;queue.appendChild(item)}
+  function updateItem(icon,statusText,bpmText,cls){const item=document.getElementById(itemId);if(!item)return;item.className='queue-item '+cls;item.innerHTML=`<div class="queue-icon">${icon}</div><div class="queue-info"><div class="queue-name">${name}</div><div class="queue-status">${statusText}</div></div>${bpmText?`<div class="queue-bpm">${bpmText}</div>`:''}`}
+  try {
+    const arrayBuf=await file.arrayBuffer();
+    const ac=getAC();
+    const audioBuf=await ac.decodeAudioData(arrayBuf);
+    updateItem('🔍','Detecting BPM...','','loading');
+    const bpm=await detectBPM(audioBuf);
+    const durMs=audioBuf.duration*1000;
+    const id=customIdCounter++;
+    let title=name.toUpperCase(), artist='CUSTOM';
+    if(name.includes(' - ')){const parts=name.split(' - ');artist=parts[0].trim().toUpperCase();title=parts.slice(1).join(' - ').trim().toUpperCase()}
+    const emojis=['🎵','🎶','🎸','🎹','🥁','🎺','🎻','🎤'];
+    const bgs=['rgba(0,245,255,0.12)','rgba(255,230,0,0.12)','rgba(0,255,157,0.12)','rgba(123,47,255,0.12)','rgba(255,45,120,0.12)'];
+    const waveformData=genWaveformData(audioBuf);
+    const song={id,title,artist,bpm,emoji:emojis[id%emojis.length],bg:bgs[id%bgs.length],audioBuffer:audioBuf,durMs,isCustom:true,waveformData,patterns:{easy:genEasy(bpm,2,durMs),medium:genMedium(bpm,3,durMs),hard:genHard(bpm,4,durMs),insane:genInsane(bpm,5,durMs)}};
+    customSongs.push(song); renderSongList();
+    const mins=Math.floor(durMs/60000),secs=String(Math.floor((durMs%60000)/1000)).padStart(2,'0');
+    updateItem('✅',`${title} · ${mins}:${secs}`,`${bpm} BPM`,'done');
+  } catch(err) { updateItem('❌','Failed: '+err.message,'','error') }
+}
+
+function removeCustomSong(id,e) {
+  e.stopPropagation();
+  customSongs=customSongs.filter(s=>s.id!==id);
+  if(selSong?.id===id){selSong=null;renderDetail()}
+  renderSongList();
+}
+
+// ── Custom Audio ──
+let customAudioSrc=null;
+function startCustomAudio(audioBuffer) {
+  stopMusic();
+  const ac=getAC();
+  customAudioSrc=ac.createBufferSource();
+  customAudioSrc.buffer=audioBuffer;
+  customAudioSrc.connect(getMaster());
+  customAudioSrc.start(0);
+  // Return the ac time at which playback started for sync
+  return ac.currentTime;
+}
+function stopCustomAudio() {
+  if(customAudioSrc){try{customAudioSrc.stop()}catch(e){}customAudioSrc=null}
+}
+
+// ── Background Video ──
+function startBgVideo(videoUrl,videoOffset) {
+  const vid=document.getElementById('bg-video'),vig=document.getElementById('bg-video-vignette');
+  vid.src=videoUrl;
+  vid.currentTime=(videoOffset<=0)?(-videoOffset)/1000:0;
+  vid.play().catch(()=>{});
+  vid.classList.add('active'); vig.classList.add('active');
+}
+function stopBgVideo() {
+  const vid=document.getElementById('bg-video'),vig=document.getElementById('bg-video-vignette');
+  vid.pause(); vid.src=''; vid.classList.remove('active'); vig.classList.remove('active');
+}
+function pauseBgVideo(){document.getElementById('bg-video').pause()}
+function resumeBgVideo(){document.getElementById('bg-video').play().catch(()=>{})}
+
+// ═══════════════════════════════════════════════════
+//  APP STATE
+// ═══════════════════════════════════════════════════
+let keys=(()=>{try{const k=JSON.parse(localStorage.getItem('nb_keys'));if(k)return k}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_KEYS))})();
+let ghostTap=localStorage.getItem('nb_ghost')!=='off';
+let selSong=null, selDiff='hard';
+let G=null, raf=null;
+let remapTarget=null, remapTemp=null;
+
+function toggleGhost(){ghostTap=!ghostTap;localStorage.setItem('nb_ghost',ghostTap?'on':'off');renderDetail()}
+function changeSpeed(delta){noteSpeed=Math.max(0.5,Math.min(3.0,Math.round((noteSpeed+delta)*10)/10));localStorage.setItem('nb_speed',noteSpeed);document.getElementById('speed-val').textContent=noteSpeed.toFixed(1)+'x'}
+function updateCustomBPM(id,val){const bpm=Math.max(60,Math.min(300,parseInt(val)||120));const song=customSongs.find(s=>s.id===id);if(!song)return;song.bpm=bpm;song.patterns={easy:genEasy(bpm,2,song.durMs),medium:genMedium(bpm,3,song.durMs),hard:genHard(bpm,4,song.durMs),insane:genInsane(bpm,5,song.durMs)};renderDetail()}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+function init() {
+  initTitle();
+  selSong=SONGS[0];
+  document.addEventListener('keydown',onKD);
+  document.addEventListener('keyup',onKU);
+}
+
+// ═══════════════════════════════════════════════════
+//  SONG SELECT RENDER
+// ═══════════════════════════════════════════════════
+function renderSongList() {
+  const el=document.getElementById('song-list');
+  el.innerHTML='';
+  const q=searchQuery, allSongs=[...SONGS,...customSongs];
+  const filtered=q?allSongs.filter(s=>s.title.toLowerCase().includes(q)||s.artist.toLowerCase().includes(q)||String(s.bpm).includes(q)):allSongs;
+  if(filtered.length===0){el.innerHTML='<div style="color:rgba(232,244,255,0.2);font-size:11px;padding:18px;text-align:center;letter-spacing:1px;">NO TRACKS FOUND</div>';return}
+  const builtins=filtered.filter(s=>!s.isCustom), customs=filtered.filter(s=>s.isCustom);
+  builtins.forEach(s=>{
+    const d=document.createElement('div');
+    d.className='song-item'+(selSong?.id===s.id?' active':'');
+    d.innerHTML=`<div class="song-title">${s.emoji} ${s.title}</div><div class="song-meta">${s.artist}</div><div class="song-bpm">${s.bpm}BPM</div>`;
+    d.onclick=()=>selectSong(s); el.appendChild(d);
+  });
+  if(customs.length>0) {
+    const hdr=document.createElement('div');hdr.className='panel-section';hdr.textContent='CUSTOM TRACKS';el.appendChild(hdr);
+    customs.forEach(s=>{
+      const d=document.createElement('div');
+      d.className='song-item song-item-custom'+(selSong?.id===s.id?' active':'');
+      d.innerHTML=`<div class="song-title">${s.emoji} ${s.title}</div><div class="song-meta">${s.artist}</div><div class="song-bpm">${s.bpm}BPM</div><div class="song-item-del" onclick="removeCustomSong(${s.id},event)">✕</div>`;
+      d.onclick=()=>selectSong(s); el.appendChild(d);
+    });
+  }
+}
+
+function selectSong(song) {
+  selSong=song; renderSongList(); renderDetail();
+}
+function filterSongs(q) { searchQuery=q.toLowerCase().trim(); renderSongList(); }
+function pickDiff(d) { selDiff=d; renderDetail(); }
+
+function renderDetail() {
+  const p=document.getElementById('detail-panel');
+  const bg=document.getElementById('detail-bg');
+  if(!selSong){p.innerHTML='<div style="color:rgba(232,244,255,0.2);font-size:13px;letter-spacing:2px;">← PICK A TRACK</div>';bg.style.background='';return}
+  const s=selSong;
+  const diffs=['easy','medium','hard','insane'];
+  const laneMap={easy:2,medium:3,hard:4,insane:5};
+  const durStr=s.durMs?(Math.floor(s.durMs/60000)+':'+String(Math.floor((s.durMs%60000)/1000)).padStart(2,'0')):'1:30';
+  // Animate bg
+  bg.style.background=`radial-gradient(ellipse at 60% 50%, ${s.bg} 0%, transparent 70%)`;
+
+  const best=getBest(s.id,selDiff);
+  const bestHtml=best?`
+    <div class="best-score-badge">
+      <div class="bs-item"><div class="bs-label">BEST SCORE</div><div class="bs-val">${best.score.toLocaleString()}</div></div>
+      <div class="bs-item"><div class="bs-label">BEST ACC</div><div class="bs-val">${best.acc.toFixed(1)}%</div></div>
+      <div class="bs-item"><div class="bs-label">MAX COMBO</div><div class="bs-val">${best.combo}</div></div>
+    </div>`:'';
+
+  // Waveform
+  const waveHtml=s.waveformData?`<div class="waveform-bar" id="wf-preview">${s.waveformData.map((v,i)=>`<div class="wf-col" style="height:${Math.max(4,v*100)}%;background:${COL[i%COL.length]}66"></div>`).join('')}</div>`:'';
+
+  p.innerHTML=`
+    <div class="cover-art" style="background:${s.bg}">${s.emoji}</div>
+    <div class="detail-info">
+      <h2>${s.title}</h2>
+      <div class="detail-artist">${s.artist}</div>
+      <div class="detail-bpm">${s.bpm} BPM &nbsp;·&nbsp; ${laneMap[selDiff]} LANES &nbsp;·&nbsp; ${durStr} &nbsp;·&nbsp; ${s.videoUrl?'🎬 VIDEO':''}</div>
+    </div>
+    ${waveHtml}
+    ${s.isCustom?`<div class="bpm-override"><span>BPM:</span><input type="number" value="${s.bpm}" min="60" max="300" onchange="updateCustomBPM(${s.id},this.value)" onclick="event.stopPropagation()"><span style="font-size:9px;opacity:0.4;">detected</span></div>`:''}
+    <div class="diff-row">
+      ${diffs.map(d=>`<button class="diff-btn ${selDiff===d?'sel-'+d:''}" onclick="pickDiff('${d}')">${d.toUpperCase()}</button>`).join('')}
+    </div>
+    ${bestHtml}
+    <div class="detail-controls">
+      <div class="keys-hint">KEYS: ${keys[selDiff].join(' · ')}</div>
+      <div class="speed-row">
+        <span>SPEED</span>
+        <button class="speed-btn" onclick="changeSpeed(-0.1)">−</button>
+        <span id="speed-val">${noteSpeed.toFixed(1)}x</span>
+        <button class="speed-btn" onclick="changeSpeed(0.1)">+</button>
+      </div>
+      <div class="ghost-toggle">
+        <span>GHOST TAP</span>
+        <button class="toggle-btn" onclick="toggleGhost()" style="border-color:${ghostTap?'var(--easy)':'var(--c1)'};color:${ghostTap?'var(--easy)':'var(--c1)'};background:${ghostTap?'rgba(0,255,157,0.09)':'rgba(255,45,120,0.09)'}">${ghostTap?'ON':'OFF'}</button>
+      </div>
+    </div>
+    <button class="play-btn" onclick="startGame()">▶ PLAY</button>
+  `;
+}
+
+// ═══════════════════════════════════════════════════
+//  GAME START
+// ═══════════════════════════════════════════════════
+function startGame() {
+  if(!selSong)return;
+  getAC();
+  const pat=selSong.patterns[selDiff];
+  G={
+    song:selSong, diff:selDiff, pat, lc:pat.lanes, ks:keys[selDiff],
+    ghostTap,
+    notes:pat.notes.map(n=>({...n,hit:false,missed:false,el:null})),
+    score:0, combo:0, maxCombo:0, perf:0, good:0, miss:0,
+    life:MAX_LIFE,
+    startT:null, elapsed:0, running:true, paused:false, held:new Set(),
+    lanes:[], receptors:[], flashes:[],
+    areaH:0, dead:false,
+    milestoneHit:new Set(),
+    lastBeatPulse:0,
+  };
+  particles=[];
+  buildLanes();
+  document.getElementById('g-title').textContent=selSong.title;
+  document.getElementById('g-diff').textContent=selDiff.toUpperCase()+'  ·  '+keys[selDiff].join(' ')+'  ·  '+noteSpeed.toFixed(1)+'x';
+  updateHUD(); updateLifeBar();
+  showScreen('game');
+  document.getElementById('gameover-overlay').classList.remove('on');
+  stopResultsCanvas();
+
+  requestAnimationFrame(()=>{
+    initParticles();
+    G.areaH=document.querySelector('.g-area').offsetHeight;
+    const ac=getAC();
+    const COUNTDOWN_MS=3000;
+    if(selSong.isCustom&&selSong.audioBuffer){
+      // Schedule audio 3 seconds from now; startAcT is that same future moment
+      const startAt=ac.currentTime+COUNTDOWN_MS/1000+0.05;
+      customAudioSrc=ac.createBufferSource();
+      customAudioSrc.buffer=selSong.audioBuffer;
+      customAudioSrc.connect(getMaster());
+      customAudioSrc.start(startAt);
+      // startAcT points to when audio (and beat 0) begins
+      G.startAcT=startAt;
+      G.startT=performance.now()+COUNTDOWN_MS;
+      if(selSong.videoUrl)startBgVideo(selSong.videoUrl,selSong.videoOffset||0);
+      else stopBgVideo();
+    } else {
+      stopBgVideo();
+      // Delay music start by 3 seconds; startAcT is that future beat-0 moment
+      const musicStartAcT=ac.currentTime+COUNTDOWN_MS/1000+0.1;
+      // Kick off the music scheduler to start at that future time
+      startMusicAt(selSong.bpm,selSong.id,musicStartAcT);
+      G.startAcT=musicStartAcT;
+      G.startT=performance.now()+COUNTDOWN_MS;
+    }
+    runCountdown(COUNTDOWN_MS);
+    raf=requestAnimationFrame(gameLoop);
+  });
+}
+
+function buildLanes() {
+  const wrap=document.getElementById('lanes-wrap');
+  wrap.innerHTML='';
+  wrap.style.width=(G.lc*LANE_W)+'px';
+  G.lanes=[]; G.receptors=[]; G.flashes=[];
+  for(let i=0;i<G.lc;i++){
+    const c=COL[i];
+    const lane=document.createElement('div');
+    lane.className='lane'; lane.style.width=LANE_W+'px';
+    const track=document.createElement('div');
+    track.className='lane-track';
+    track.style.background=`linear-gradient(180deg,transparent 0%,${c}08 40%,${c}16 85%,${c}26 100%)`;
+    const hitline=document.createElement('div');
+    hitline.className='lane-hitline';
+    hitline.style.top=(RECEP_FRAC*100)+'%';
+    hitline.style.background=`linear-gradient(90deg,transparent,${c},${c},transparent)`;
+    hitline.style.boxShadow=`0 0 10px 2px ${c}88`;
+    const flash=document.createElement('div');
+    flash.className='lane-flash'; flash.style.background=c;
+    const recep=document.createElement('div');
+    recep.className='lane-receptor';
+    recep.style.top=`calc(${RECEP_FRAC*100}% - 13px)`;
+    recep.style.color=c; recep.style.borderColor=c;
+    recep.style.boxShadow=`0 0 10px ${c}44, inset 0 0 6px ${c}1a`;
+    recep.textContent=G.ks[i];
+    lane.appendChild(track); lane.appendChild(hitline); lane.appendChild(flash); lane.appendChild(recep);
+    wrap.appendChild(lane);
+    G.lanes.push(lane); G.receptors.push(recep); G.flashes.push(flash);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  GAME LOOP
+// ═══════════════════════════════════════════════════
+function gameLoop(now) {
+  if(!G||!G.running)return;
+  if(G.paused){raf=requestAnimationFrame(gameLoop);return}
+  // Use Web Audio context clock for accurate beat sync
+  const ac=getAC();
+  G.elapsed=(ac.currentTime-G.startAcT)*1000;
+  const prog=Math.min(Math.max(G.elapsed/G.pat.dur*100,0),100);
+  document.getElementById('g-prog').style.width=prog+'%';
+
+  const FALL_MS=getFallMs();
+  const aH=G.areaH, receptorY=aH*RECEP_FRAC-13;
+
+  // Beat pulse effect (only once music has started)
+  const beatMs=(60000/G.song.bpm);
+  const beatPhase=G.elapsed%beatMs;
+  if(G.elapsed>0&&beatPhase<50&&G.elapsed-G.lastBeatPulse>beatMs*0.8){
+    G.lastBeatPulse=G.elapsed;
+    const lw=document.getElementById('lanes-wrap');
+    if(lw){lw.style.animation='none';lw.offsetHeight;lw.style.animation='beat-pulse 0.12s ease-out'}
+  }
+
+  G.notes.forEach(note=>{
+    if(note.hit||note.missed)return;
+    const msUntilHit=note.time-G.elapsed;
+    if(msUntilHit < -320){
+      note.missed=true;
+      if(note.el){note.el.remove();note.el=null}
+      G.combo=0; G.miss++; onMiss(); return;
+    }
+    if(msUntilHit>FALL_MS)return;
+    const frac=1-(msUntilHit/FALL_MS);
+    const yPx=frac*(receptorY+NOTE_H)-NOTE_H;
+    if(!note.el){
+      const el=document.createElement('div');
+      el.className='note';
+      el.style.height=NOTE_H+'px';
+      el.style.background=`linear-gradient(180deg,${COL[note.lane]}ee,${COL[note.lane]}88)`;
+      el.style.boxShadow=`0 0 8px ${COL[note.lane]}aa, 0 2px 3px rgba(0,0,0,0.4)`;
+      el.style.borderColor=COL[note.lane];
+      G.lanes[note.lane].appendChild(el);
+      note.el=el;
+    }
+    note.el.style.top=yPx+'px';
+  });
+
+  drawParticles();
+  if(G.elapsed>=G.pat.dur){endGame();return}
+  raf=requestAnimationFrame(gameLoop);
+}
+
+// ═══════════════════════════════════════════════════
+//  LIFE BAR
+// ═══════════════════════════════════════════════════
+function updateLifeBar() {
+  const pct=Math.max(0,Math.min(100,G.life));
+  const fill=document.getElementById('life-fill');
+  fill.style.width=pct+'%';
+  document.getElementById('life-pct').textContent=Math.ceil(pct)+'%';
+  fill.classList.remove('danger','critical');
+  if(pct<=LIFE_CRITICAL)fill.classList.add('critical');
+  else if(pct<=LIFE_DANGER)fill.classList.add('danger');
+}
+
+function onMiss() {
+  G.life=Math.max(0,G.life-LIFE_MISS_LOSS);
+  updateLifeBar(); updateHUD();
+  showJudge('MISS','#ff2d78');
+  sfxMiss(); flashDamage();
+  if(G.life<=0)triggerGameOver();
+}
+
+function flashDamage() {
+  const el=document.getElementById('dmg-flash');
+  el.style.display='block'; el.style.animation='none'; el.offsetHeight;
+  el.style.animation='dmg-flash 0.35s ease-out forwards';
+  setTimeout(()=>el.style.display='none',360);
+}
+
+function triggerGameOver() {
+  G.running=false; G.dead=true;
+  stopMusic(); stopCustomAudio(); stopBgVideo();
+  cancelAnimationFrame(raf);
+  sfxGameOver();
+  G.notes.forEach(n=>{if(n.el){n.el.remove();n.el=null}});
+  // Fill game over stats
+  const tot=G.perf+G.good+G.miss;
+  const acc=tot===0?100:((G.perf*100+G.good*60)/(tot*100))*100;
+  document.getElementById('go-score').textContent=G.score.toLocaleString();
+  document.getElementById('go-combo').textContent=G.maxCombo;
+  document.getElementById('go-acc').textContent=acc.toFixed(1)+'%';
+  setTimeout(()=>document.getElementById('gameover-overlay').classList.add('on'),400);
+}
+
+// ═══════════════════════════════════════════════════
+//  HIT DETECTION
+// ═══════════════════════════════════════════════════
+function pressLane(li) {
+  if(!G||!G.running||G.paused)return;
+  const c=COL[li];
+  // Flash receptor
+  const fl=G.flashes[li]; fl.classList.add('on'); setTimeout(()=>fl.classList.remove('on'),70);
+  const rc=G.receptors[li]; rc.classList.add('lit'); rc.style.background=c+'28';
+  rc.style.boxShadow=`0 0 20px ${c}, inset 0 0 8px ${c}44`;
+  setTimeout(()=>{rc.classList.remove('lit');rc.style.background='';rc.style.boxShadow=`0 0 10px ${c}44, inset 0 0 6px ${c}1a`},110);
+
+  const now=G.elapsed;
+  let best=null, bestDt=Infinity;
+  G.notes.forEach(n=>{
+    if(n.hit||n.missed||n.lane!==li)return;
+    const dt=Math.abs(n.time-now);
+    if(dt<bestDt&&dt<=GOOD_WIN){bestDt=dt;best=n}
+  });
+
+  if(!best){
+    if(!G.ghostTap){G.combo=0;G.life=Math.max(0,G.life-3);updateLifeBar();updateHUD();showJudge('GHOST','#554466');sfxMiss();if(G.life<=0)triggerGameOver()}
+    return;
+  }
+
+  best.hit=true;
+  // Get note position for particles
+  const FALL_MS=getFallMs();
+  const aH=G.areaH, receptorY=aH*RECEP_FRAC;
+  const laneRect=G.lanes[li].getBoundingClientRect();
+  const areaRect=document.querySelector('.g-area').getBoundingClientRect();
+  const px=laneRect.left-areaRect.left+laneRect.width/2;
+  const py=receptorY;
+
+  if(best.el){best.el.remove();best.el=null}
+
+  if(bestDt<=PERF_WIN){
+    G.perf++; G.combo++;
+    G.score+=300+Math.min(G.combo*3,300);
+    G.life=Math.min(MAX_LIFE,G.life+LIFE_PERF_GAIN);
+    showJudge('PERFECT!',c,bestDt);
+    sfxNote(c,true);
+    spawnParticles(px,py,c,true);
+  } else {
+    G.good++; G.combo++;
+    G.score+=150+Math.min(G.combo,100);
+    G.life=Math.min(MAX_LIFE,G.life+LIFE_GOOD_GAIN);
+    const timing=bestDt>PERF_WIN*1.5?(best.time<now?'LATE':'EARLY'):'';
+    showJudge('GOOD',c,bestDt,timing);
+    sfxNote(c,false);
+    spawnParticles(px,py,c,false);
+  }
+
+  G.maxCombo=Math.max(G.maxCombo,G.combo);
+
+  // Milestone check
+  if(MILESTONES.includes(G.combo)&&!G.milestoneHit.has(G.combo)){
+    G.milestoneHit.add(G.combo);
+    showMilestone(G.combo);
+    sfxMilestone();
+  }
+
+  if(G.combo>=3)showCombo();
+  updateHUD(); updateLifeBar();
+
+  // Score pop
+  const sc=document.getElementById('g-score');
+  sc.classList.remove('pop'); sc.offsetHeight; sc.classList.add('pop');
+  setTimeout(()=>sc.classList.remove('pop'),80);
+}
+
+function updateHUD() {
+  document.getElementById('g-score').textContent=G.score.toLocaleString();
+  document.getElementById('g-combo').textContent=G.combo;
+  const tot=G.perf+G.good+G.miss;
+  const acc=tot===0?100:((G.perf*100+G.good*60)/(tot*100))*100;
+  document.getElementById('g-acc').textContent=acc.toFixed(2)+'%';
+}
+
+function showJudge(txt,col,dt,timing) {
+  const el=document.getElementById('judgment');
+  el.innerHTML='';
+  const s=document.createElement('span');
+  s.className='jtext'; s.textContent=txt;
+  s.style.color=col; s.style.textShadow=`0 0 16px ${col}`;
+  el.appendChild(s);
+  if(timing){const sub=document.createElement('span');sub.className='jtext early';sub.textContent=timing;sub.style.color='rgba(232,244,255,0.4)';el.appendChild(sub)}
+}
+
+function showCombo() {
+  const el=document.getElementById('combo-pop');
+  el.innerHTML='';
+  const s=document.createElement('span');
+  s.className='combo-num'; s.textContent=G.combo; el.appendChild(s);
+  setTimeout(()=>el.innerHTML='',700);
+}
+
+function showMilestone(combo) {
+  const el=document.getElementById('milestone-pop');
+  el.innerHTML='';
+  const s=document.createElement('span');
+  s.className='milestone-text';
+  s.textContent=MILESTONE_MSGS[combo]||combo+' COMBO';
+  s.style.background='linear-gradient(90deg,var(--c0),var(--c2))';
+  s.style.webkitBackgroundClip='text'; s.style.webkitTextFillColor='transparent';
+  el.appendChild(s);
+  setTimeout(()=>el.innerHTML='',1500);
+}
+
+// ═══════════════════════════════════════════════════
+//  PAUSE
+// ═══════════════════════════════════════════════════
+function pauseGame() {
+  if(!G||!G.running)return;
+  G.paused=true; G._pauseAt=performance.now(); G._pauseAcAt=getAC().currentTime;
+  if(AC)AC.suspend();
+  pauseBgVideo();
+  // Show current stats in pause
+  const tot=G.perf+G.good+G.miss;
+  const acc=tot===0?100:((G.perf*100+G.good*60)/(tot*100))*100;
+  document.getElementById('pause-info').textContent=`SCORE: ${G.score.toLocaleString()}  ·  COMBO: ${G.maxCombo}  ·  ACC: ${acc.toFixed(1)}%`;
+  document.getElementById('pause-overlay').classList.add('on');
+}
+function resumeGame() {
+  if(!G)return;
+  G.paused=false;
+  if(AC)AC.resume().then(()=>{
+    // Shift startAcT forward by the duration of the pause so elapsed stays correct
+    const pauseDurAc=getAC().currentTime-G._pauseAcAt;
+    G.startAcT+=pauseDurAc;
+  });
+  resumeBgVideo();
+  document.getElementById('pause-overlay').classList.remove('on');
+}
+
+// ═══════════════════════════════════════════════════
+//  END / RESULTS
+// ═══════════════════════════════════════════════════
+let _stopResultsFx = null;
+function endGame() {
+  G.running=false;
+  stopMusic(); stopCustomAudio(); stopBgVideo();
+  cancelAnimationFrame(raf);
+  const tot=G.perf+G.good+G.miss;
+  const acc=tot===0?100:((G.perf*100+G.good*60)/(tot*100))*100;
+  let rank='C', rc='c';
+  if(G.dead){rank='F';rc='f'}
+  else if(acc>=97&&G.miss===0){rank='S';rc='s'}
+  else if(acc>=90){rank='A';rc='a'}
+  else if(acc>=75){rank='B';rc='b'}
+
+  const isNewBest=!G.dead&&saveBest(G.song.id,G.diff,G.score,acc,G.maxCombo);
+
+  document.getElementById('res-name').textContent=G.song.title;
+  document.getElementById('res-dif').textContent=G.diff.toUpperCase()+' · '+noteSpeed.toFixed(1)+'x';
+  document.getElementById('r-score').textContent=G.score.toLocaleString();
+  document.getElementById('r-acc').textContent=acc.toFixed(2)+'%';
+  document.getElementById('r-perf').textContent=G.perf;
+  document.getElementById('r-good').textContent=G.good;
+  document.getElementById('r-miss').textContent=G.miss;
+  document.getElementById('r-combo').textContent=G.maxCombo;
+  const rr=document.getElementById('res-rank'); rr.textContent=rank; rr.className='res-rank '+rc;
+  const ct=document.getElementById('res-clear-text');
+  if(G.dead)ct.textContent='FAILED';
+  else if(G.miss===0&&G.good===0)ct.textContent='★ PERFECT FULL COMBO ★';
+  else if(G.miss===0)ct.textContent='FULL COMBO!';
+  else ct.textContent='CLEAR!';
+  document.getElementById('new-best-badge').className='new-best'+(isNewBest?' show':'');
+  // Animate accuracy bar
+  setTimeout(()=>{document.getElementById('acc-bar').style.width=acc.toFixed(1)+'%'},200);
+
+  setTimeout(()=>{
+    showScreen('results');
+    _stopResultsFx=startResultsCanvas(rc);
+  },500);
+}
+
+function retry(){
+  if(_stopResultsFx){_stopResultsFx();_stopResultsFx=null}
+  const s=selSong,d=selDiff; showScreen('select'); selSong=s; selDiff=d; setTimeout(startGame,50);
+}
+function backSel(){
+  if(_stopResultsFx){_stopResultsFx();_stopResultsFx=null}
+  stopMusic(); stopCustomAudio(); stopBgVideo(); showScreen('select');
+}
+function retryAfterGameOver(){document.getElementById('gameover-overlay').classList.remove('on');retry()}
+function quitMenu(){
+  if(G)G.running=false;
+  cancelAnimationFrame(raf);
+  stopMusic(); stopCustomAudio(); stopBgVideo();
+  document.getElementById('pause-overlay').classList.remove('on');
+  document.getElementById('gameover-overlay').classList.remove('on');
+  showScreen('select');
+}
+
+// ═══════════════════════════════════════════════════
+//  INPUT
+// ═══════════════════════════════════════════════════
+function onKD(e) {
+  if(e.repeat)return;
+  const k=e.key===' '?'SPACE':e.key.toUpperCase();
+  if(k==='ESCAPE'){if(G&&G.running){G.paused?resumeGame():pauseGame();}return}
+  if(remapTarget){captureKey(k);return}
+  if(!G||!G.running||G.paused)return;
+  if(G.held.has(k))return;
+  G.held.add(k);
+  const li=G.ks.indexOf(k);
+  if(li!==-1)pressLane(li);
+}
+function onKU(e){if(G)G.held?.delete(e.key===' '?'SPACE':e.key.toUpperCase())}
+
+// ═══════════════════════════════════════════════════
+//  SCREEN MANAGEMENT
+// ═══════════════════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  const el=document.getElementById('screen-'+name);
+  if(el)el.classList.remove('hidden');
+  if(name==='select'){renderSongList();renderDetail()}
+}
+
+// ═══════════════════════════════════════════════════
+//  KEY REMAP
+// ═══════════════════════════════════════════════════
+function openRemap(){remapTemp=JSON.parse(JSON.stringify(keys));remapTarget=null;renderRemapTable();showScreen('remap')}
+function renderRemapTable(){
+  const t=document.getElementById('remap-table');t.innerHTML='';
+  ['easy','medium','hard','insane'].forEach(d=>{
+    const row=document.createElement('div');row.className='remap-row';
+    const lbl=document.createElement('div');lbl.className='remap-label';lbl.style.color=DIFF_COL[d];lbl.textContent=d.toUpperCase();
+    row.appendChild(lbl);
+    const kw=document.createElement('div');kw.className='remap-keys';
+    remapTemp[d].forEach((k,i)=>{
+      const btn=document.createElement('div');btn.className='rkey';btn.textContent=k;
+      btn.onclick=()=>{document.querySelectorAll('.rkey.waiting').forEach(b=>b.classList.remove('waiting'));btn.classList.add('waiting');btn.textContent='?';remapTarget={diff:d,idx:i,btn}};
+      kw.appendChild(btn);
+    });
+    row.appendChild(kw);t.appendChild(row);
+  });
+}
+function captureKey(k){if(!remapTarget)return;const{diff,idx,btn}=remapTarget;remapTemp[diff][idx]=k;btn.textContent=k;btn.classList.remove('waiting');remapTarget=null}
+function saveRemap(){keys=JSON.parse(JSON.stringify(remapTemp));localStorage.setItem('nb_keys',JSON.stringify(keys));remapTarget=null;showScreen('select');renderDetail()}
+function resetRemap(){remapTemp=JSON.parse(JSON.stringify(DEFAULT_KEYS));remapTarget=null;renderRemapTable()}
+function cancelRemap(){remapTarget=null;showScreen('select')}
+
+// ═══════════════════════════════════════════════════
+//  GO
+// ═══════════════════════════════════════════════════
+init();
+</script>
+
+<!-- ═══ UPLOAD SCREEN (2nd script block) ═══ -->
+<script>
+// ── .OSU PARSER ──────────────────────────────────
+function parseOsuFile(text) {
+  const lines=text.split(/\r?\n/);
+  let section='';
+  const meta={title:'UNKNOWN',artist:'UNKNOWN',audioFile:'audio.mp3',bpm:120,keys:4,videoFile:null,videoOffset:0};
+  const timingPoints=[], hitObjects=[];
+  for(const raw of lines){
+    const line=raw.trim();
+    if(!line||line.startsWith('//'))continue;
+    if(line.startsWith('[')&&line.endsWith(']')){section=line.slice(1,-1);continue}
+    if(section==='Metadata'){if(line.startsWith('Title:'))meta.title=line.slice(6).trim();if(line.startsWith('Artist:'))meta.artist=line.slice(7).trim()}
+    if(section==='General'){if(line.startsWith('AudioFilename:'))meta.audioFile=line.slice(14).trim()}
+    if(section==='Difficulty'){if(line.startsWith('CircleSize:'))meta.keys=Math.max(1,parseInt(line.slice(11))||4)}
+    if(section==='Events'){const vm=line.match(/^(?:1|Video)\s*,\s*(-?\d+)\s*,\s*"([^"]+)"/i);if(vm&&!meta.videoFile){const ext=vm[2].split('.').pop().toLowerCase();if(['mp4','avi','mov','flv','wmv','mkv','webm'].includes(ext)){meta.videoFile=vm[2];meta.videoOffset=parseInt(vm[1])||0}}}
+    if(section==='TimingPoints'){const p=line.split(',');if(p.length>=2){const beat=parseFloat(p[1]);if(beat>0)timingPoints.push({t:parseFloat(p[0]),bpm:Math.round(60000/beat)})}}
+    if(section==='HitObjects'){const p=line.split(',');if(p.length>=3){const x=parseInt(p[0]),time=parseInt(p[2]);if(!isNaN(x)&&!isNaN(time)){const k=meta.keys,lane=Math.min(k-1,Math.floor(x/512*k));hitObjects.push({time,lane})}}}
+  }
+  if(timingPoints.length>0)meta.bpm=timingPoints[0].bpm;
+  const srcKeys=meta.keys;
+  function remapLane(lane,tgt){return Math.min(tgt-1,Math.floor(lane/srcKeys*tgt))}
+  function thin(keepEvery,tgtLanes){const kept=[];let id=0;hitObjects.forEach((h,i)=>{if(i%keepEvery===0||keepEvery===1)kept.push({time:h.time,lane:remapLane(h.lane,tgtLanes),id:id++})});const dur=kept.length>0?kept[kept.length-1].time+3000:90000;return{notes:kept,dur,lanes:tgtLanes}}
+  const fullNotes=hitObjects.map((h,id)=>({time:h.time,lane:remapLane(h.lane,5),id}));
+  const fullDur=fullNotes.length>0?fullNotes[fullNotes.length-1].time+3000:90000;
+  return{meta,patterns:{easy:thin(4,2),medium:thin(2,3),hard:thin(2,4),insane:{notes:fullNotes,dur:fullDur,lanes:5}}};
+}
+
+// ── .OSZ IMPORT ──────────────────────────────────
+const audioCache={};
+async function importOsz(file) {
+  const key=file.name;
+  queueUpdate(key,'⏳','Reading .osz...','loading');
+  try {
+    const ab=await file.arrayBuffer();
+    const zip=await JSZip.loadAsync(ab);
+    const osuNames=Object.keys(zip.files).filter(n=>n.endsWith('.osu')&&!zip.files[n].dir);
+    if(osuNames.length===0)throw new Error('No .osu files found inside this .osz');
+    let importedCount=0;
+    const localAudioCache={};
+    for(const osuName of osuNames){
+      const osuText=await zip.files[osuName].async('string');
+      const parsed=parseOsuFile(osuText);
+      const{meta,patterns}=parsed;
+      const audioFilename=meta.audioFile;
+      const audioZipKey=Object.keys(zip.files).find(k=>k.toLowerCase()===audioFilename.toLowerCase()||k.split('/').pop().toLowerCase()===audioFilename.toLowerCase());
+      if(!audioZipKey)continue;
+      let audioBuf;
+      if(localAudioCache[audioFilename]){audioBuf=localAudioCache[audioFilename]}
+      else{
+        queueUpdate(key,'⏳',`Decoding audio: ${audioFilename}`,'loading');
+        const rawAudio=await zip.files[audioZipKey].async('arraybuffer');
+        const ac=getAC();
+        audioBuf=await ac.decodeAudioData(rawAudio);
+        localAudioCache[audioFilename]=audioBuf;
+      }
+      const diffMatch=osuText.match(/Version:(.+)/);
+      const diffName=diffMatch?diffMatch[1].trim():osuName;
+      // Video
+      let videoUrl=null,videoOffset=0;
+      if(meta.videoFile){
+        const videoZipKey=Object.keys(zip.files).find(k=>k.toLowerCase()===meta.videoFile.toLowerCase()||k.split('/').pop().toLowerCase()===meta.videoFile.toLowerCase());
+        if(videoZipKey){
+          queueUpdate(key,'⏳','Extracting video...','loading');
+          const rawVideo=await zip.files[videoZipKey].async('blob');
+          const ext=meta.videoFile.split('.').pop().toLowerCase();
+          const mimeMap={mp4:'video/mp4',webm:'video/webm',avi:'video/x-msvideo',mov:'video/quicktime',mkv:'video/x-matroska',flv:'video/x-flv',wmv:'video/x-ms-wmv'};
+          videoUrl=URL.createObjectURL(new Blob([rawVideo],{type:mimeMap[ext]||'video/mp4'}));
+          videoOffset=meta.videoOffset;
+        }
+      }
+      const id=customIdCounter++;
+      const emojis=['🎵','🎶','🌸','⚡','🌟','💫','🎤','🎹','👾','🌌','🎀','🔥'];
+      const bgs=['rgba(0,245,255,0.12)','rgba(255,230,0,0.12)','rgba(0,255,157,0.12)','rgba(123,47,255,0.12)','rgba(255,45,120,0.12)'];
+      const waveformData=genWaveformData(audioBuf);
+      const song={id,title:meta.title.toUpperCase(),artist:meta.artist.toUpperCase(),bpm:meta.bpm,emoji:emojis[id%emojis.length],bg:bgs[id%bgs.length],audioBuffer:audioBuf,durMs:audioBuf.duration*1000,isCustom:true,diffName,patterns,videoUrl,videoOffset,waveformData};
+      customSongs.push(song); importedCount++;
+    }
+    renderSongList();
+    queueUpdate(key,'✅',`Imported ${importedCount} difficult${importedCount!==1?'ies':'y'}`+(localAudioCache?'':''),'done');
+  } catch(e) {
+    console.error(e);
+    queueUpdate(key,'❌','Failed: '+e.message,'error');
+  }
+}
+
+// ── .OSU + AUDIO PAIRS ───────────────────────────
+const _pendingOsu={}, _pendingAudio={};
+async function importOsuAudioPairs(osuFiles,audioFiles){
+  for(const f of osuFiles){const text=await f.text();const parsed=parseOsuFile(text);const aname=parsed.meta.audioFile.toLowerCase();_pendingOsu[aname]={parsed,fname:f.name}}
+  for(const f of audioFiles){const buf=await f.arrayBuffer();_pendingAudio[f.name.toLowerCase()]=buf}
+  for(const aname of Object.keys(_pendingOsu)){
+    const matchKey=Object.keys(_pendingAudio).find(k=>k===aname||k.replace(/\.[^.]+$/,'')===aname.replace(/\.[^.]+$/,''));
+    if(matchKey){const{parsed,fname}=_pendingOsu[aname];await importOsuWithAudio(parsed,_pendingAudio[matchKey],fname);delete _pendingOsu[aname];delete _pendingAudio[matchKey]}
+  }
+  for(const[fname,buf]of Object.entries(_pendingAudio)){const file=new File([buf],fname);loadAudioFile(file);delete _pendingAudio[fname]}
+  for(const[aname,{fname}]of Object.entries(_pendingOsu))queueUpdate(fname,'⚠️',`Waiting for audio: ${aname}`,'loading');
+}
+async function importOsuWithAudio(parsed,arrayBuf,osuFilename){
+  queueUpdate(osuFilename,'⏳','Decoding audio...','loading');
+  try{
+    const ac=getAC();
+    const audioBuf=await ac.decodeAudioData(arrayBuf instanceof ArrayBuffer?arrayBuf:await arrayBuf.arrayBuffer());
+    const{meta,patterns}=parsed;
+    const id=customIdCounter++;
+    const emojis=['🎵','🎶','🌸','⚡','🌟','💫','🎤','🎹','👾','🌌','🎀','🔥'];
+    const bgs=['rgba(0,245,255,0.12)','rgba(255,230,0,0.12)','rgba(0,255,157,0.12)','rgba(123,47,255,0.12)','rgba(255,45,120,0.12)'];
+    const waveformData=genWaveformData(audioBuf);
+    const song={id,title:meta.title.toUpperCase(),artist:meta.artist.toUpperCase(),bpm:meta.bpm,emoji:emojis[id%emojis.length],bg:bgs[id%bgs.length],audioBuffer:audioBuf,durMs:audioBuf.duration*1000,isCustom:true,patterns,waveformData};
+    customSongs.push(song);renderSongList();
+    const m=Math.floor(audioBuf.duration/60),s=String(Math.floor(audioBuf.duration%60)).padStart(2,'0');
+    queueUpdate(osuFilename,'✅',`${meta.title} · ${m}:${s}`,'done');
+  }catch(e){queueUpdate(osuFilename,'❌','Failed: '+e.message,'error')}
+}
+
+// ── QUEUE UI ─────────────────────────────────────
+const _queueEls={};
+function queueUpdate(key,icon,status,cls){
+  const queue=document.getElementById('upload-queue');
+  if(!queue)return;
+  queue.style.display='flex';
+  if(!_queueEls[key]){const el=document.createElement('div');queue.appendChild(el);_queueEls[key]=el}
+  const el=_queueEls[key];
+  el.className='queue-item '+cls;
+  el.innerHTML=`<div class="queue-icon">${icon}</div><div class="queue-info"><div class="queue-name">${key}</div><div class="queue-status">${status}</div></div>`;
+}
+
+// ── FILE HANDLERS ─────────────────────────────────
+function onDragOver(e){e.preventDefault();document.getElementById('upload-drop-area').classList.add('drag-over')}
+function onDragLeave(e){document.getElementById('upload-drop-area').classList.remove('drag-over')}
+function onDrop(e){e.preventDefault();document.getElementById('upload-drop-area').classList.remove('drag-over');handleFiles(Array.from(e.dataTransfer.files))}
+function onFileSelect(e){handleFiles(Array.from(e.target.files));e.target.value=''}
+async function handleFiles(files){
+  if(files.some(f=>f.name.endsWith('.osz'))&&typeof JSZip==='undefined')await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  const oszFiles=files.filter(f=>f.name.endsWith('.osz'));
+  const osuFiles=files.filter(f=>f.name.endsWith('.osu'));
+  const audioFiles=files.filter(f=>!f.name.endsWith('.osz')&&!f.name.endsWith('.osu')&&(f.type.startsWith('audio/')||/\.(mp3|ogg|wav|flac|m4a)$/i.test(f.name)));
+  for(const f of oszFiles)importOsz(f);
+  if(osuFiles.length>0||audioFiles.length>0)importOsuAudioPairs(osuFiles,audioFiles);
+}
+function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`)){res();return}const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+</script>
+</body>
+</html>
